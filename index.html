@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KICKOFF Store | ระบบสั่งซื้อและจองอุปกรณ์กีฬาฟุตบอลออนไลน์ล่วงหน้า เพื่อรับสินค้า ณ หน้าร้าน</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .page-content { animation: fadeIn .35s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:translateY(0);} }
+        .hero-slide { transition: opacity .7s ease, transform .7s ease; }
+        .hero-dot.active { background:#fbbf24; width:22px; }
+        ::-webkit-scrollbar { height:6px; width:6px; }
+        ::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:10px; }
+    </style>
+</head>
+<body class="bg-gray-100 text-slate-800">
+
+    <header class="bg-black text-white sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 onclick="showPage('shop-page')" class="text-xl font-extrabold text-amber-400 cursor-pointer tracking-wider leading-none">KICKOFF STORE<span class="block text-[9px] font-normal text-slate-400 tracking-normal">จองออนไลน์ • รับสินค้า ณ หน้าร้าน</span></h1>
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="showPage('shop-page')" class="hidden sm:inline text-xs font-bold bg-amber-400 text-black px-3 py-1.5 rounded-lg">สินค้าทั้งหมด</button>
+
+                <div id="auth-guest-controls" class="flex items-center space-x-2">
+                    <button onclick="showPage('login-page')" class="text-xs font-bold border border-amber-400 text-amber-400 px-3 py-1.5 rounded-lg hover:bg-amber-400 hover:text-black transition">เข้าสู่ระบบ</button>
+                    <button onclick="showPage('register-page')" class="hidden sm:inline text-xs font-bold text-slate-300 px-2 py-1.5 rounded-lg hover:text-white transition">สมัครสมาชิก</button>
+                </div>
+
+                <div id="auth-user-controls" class="hidden items-center space-x-2">
+                    <button onclick="showPage('profile-page')" class="flex items-center gap-1.5 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition">
+                        <span class="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-black" id="user-avatar-initial">?</span>
+                        <span id="user-nav-name" class="max-w-[80px] truncate"></span>
+                    </button>
+                    <button onclick="logoutUser()" class="text-xs font-bold text-slate-400 hover:text-red-400 transition px-1">ออกจากระบบ</button>
+                </div>
+
+                <button onclick="openCartModal()" class="relative p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition">
+                    🛒
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-amber-400 text-black text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+
+        <!-- ============ SHOP PAGE ============ -->
+        <section id="shop-page" class="page-content space-y-6">
+
+            <!-- Auto-sliding hero banner -->
+            <div id="hero-banner" class="relative rounded-3xl overflow-hidden h-40 sm:h-56 bg-black shadow-lg select-none">
+                <div id="hero-slides" class="relative w-full h-full"></div>
+                <button onclick="heroPrev()" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white w-8 h-8 rounded-full text-sm">‹</button>
+                <button onclick="heroNext()" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white w-8 h-8 rounded-full text-sm">›</button>
+                <div id="hero-dots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5"></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-4">
+                <div class="flex gap-2">
+                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="ค้นหาสินค้า ทีม หรือแบรนด์..." class="w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:border-black">
+                    <select id="brand-select" onchange="handleBrandChange()" class="border p-2.5 rounded-xl text-sm focus:outline-none focus:border-black">
+                        <option value="all">ทุกแบรนด์</option>
+                        <option value="Ari">Ari / Ari Gear</option>
+                        <option value="Nike">Nike</option>
+                        <option value="Adidas">Adidas</option>
+                        <option value="Puma">Puma</option>
+                        <option value="Mizuno">Mizuno</option>
+                        <option value="Grand Sport">Grand Sport</option>
+                        <option value="Molten">Molten</option>
+                        <option value="อื่นๆ">อื่นๆ</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 overflow-x-auto pb-1">
+                    <button onclick="filterCategory('all')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-black text-white border-black whitespace-nowrap" data-cat="all">ทั้งหมด</button>
+                    <button onclick="filterCategory('shoes')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="shoes">รองเท้า</button>
+                    <button onclick="filterCategory('club-apparel')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="club-apparel">เสื้อสโมสร</button>
+                    <button onclick="filterCategory('tshirt')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="tshirt">เสื้อยืดเล่นกีฬา</button>
+                    <button onclick="filterCategory('shorts')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="shorts">กางเกงกีฬา</button>
+                    <button onclick="filterCategory('jackets')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="jackets">แจ็คเก็ต & วอร์ม</button>
+                    <button onclick="filterCategory('socks')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="socks">ถุงเท้ากีฬา</button>
+                    <button onclick="filterCategory('equipment')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="equipment">ลูกฟุตบอล & อุปกรณ์</button>
+                    <button onclick="filterCategory('protection')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="protection">อุปกรณ์เซฟตี้</button>
+                    <button onclick="filterCategory('training-gear')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="training-gear">อุปกรณ์ซ้อม & โค้ช</button>
+                    <button onclick="filterCategory('bags')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="bags">กระเป๋า</button>
+                    <button onclick="filterCategory('accessories')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl border bg-white text-gray-700 whitespace-nowrap" data-cat="accessories">หมวก & แอคเซสเซอรี่</button>
+                </div>
+            </div>
+
+            <p id="product-count-label" class="text-xs text-gray-500 font-bold"></p>
+            <div id="shop-product-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+        </section>
+
+        <!-- ============ LOGIN PAGE ============ -->
+        <section id="login-page" class="page-content hidden max-w-sm mx-auto">
+            <div class="bg-white rounded-3xl shadow-sm border p-6 space-y-4">
+                <div class="text-center space-y-1">
+                    <div class="text-3xl">🔐</div>
+                    <h2 class="text-lg font-extrabold">เข้าสู่ระบบสมาชิก</h2>
+                    <p class="text-xs text-gray-500">ต้องเข้าสู่ระบบก่อนจึงจะสั่งซื้อสินค้าได้</p>
+                </div>
+                <p id="login-error" class="hidden text-xs text-red-500 font-bold bg-red-50 border border-red-200 rounded-lg p-2 text-center"></p>
+                <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">เบอร์โทรศัพท์ หรือ อีเมล</label>
+                        <input type="text" id="login-identifier" required class="w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:border-black">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1">รหัสผ่าน</label>
+                        <input type="password" id="login-password" required class="w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:border-black">
+                    </div>
+                    <button type="submit" class="w-full bg-amber-400 hover:bg-amber-300 font-bold py-3 rounded-xl transition">เข้าสู่ระบบ</button>
+                </form>
+                <p class="text-xs text-center text-gray-500">ยังไม่มีบัญชี? <span onclick="showPage('register-page')" class="text-amber-600 font-bold cursor-pointer hover:underline">สมัครสมาชิก</span></p>
+                <p class="text-[10px] text-center text-gray-400 pt-2 border-t">ทดลองใช้: กรอกเบอร์/อีเมลและรหัสผ่านที่เคยสมัครไว้ในเครื่องนี้</p>
+            </div>
+        </section>
+
+        <!-- ============ REGISTER PAGE ============ -->
+        <section id="register-page" class="page-content hidden max-w-sm mx-auto">
+            <div class="bg-white rounded-3xl shadow-sm border p-6 space-y-4">
+                <div class="text-center space-y-1">
+                    <div class="text-3xl">📝</div>
+                    <h2 class="text-lg font-extrabold">สมัครสมาชิกใหม่</h2>
+                    <p class="text-xs text-gray-500">สมัครฟรี รับสิทธิ์สั่งซื้อและดูประวัติการสั่งซื้อ</p>
+                </div>
+                <p id="register-error" class="hidden text-xs text-red-500 font-bold bg-red-50 border border-red-200 rounded-lg p-2 text-center"></p>
+                <form onsubmit="handleRegisterSubmit(event)" class="space-y-3">
+                    <input type="text" id="reg-name" placeholder="ชื่อ-นามสกุล" required class="w-full border p-2.5 rounded-xl text-sm">
+                    <input type="tel" id="reg-phone" placeholder="เบอร์โทรศัพท์" required class="w-full border p-2.5 rounded-xl text-sm">
+                    <input type="email" id="reg-email" placeholder="อีเมล" required class="w-full border p-2.5 rounded-xl text-sm">
+                    <input type="password" id="reg-password" placeholder="ตั้งรหัสผ่าน (อย่างน้อย 4 ตัวอักษร)" required minlength="4" class="w-full border p-2.5 rounded-xl text-sm">
+                    <button type="submit" class="w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">สมัครสมาชิก</button>
+                </form>
+                <p class="text-xs text-center text-gray-500">มีบัญชีอยู่แล้ว? <span onclick="showPage('login-page')" class="text-amber-600 font-bold cursor-pointer hover:underline">เข้าสู่ระบบ</span></p>
+            </div>
+        </section>
+
+        <!-- ============ PROFILE / ORDER HISTORY PAGE ============ -->
+        <section id="profile-page" class="page-content hidden max-w-2xl mx-auto space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm border p-6 flex items-center gap-4">
+                <div class="w-14 h-14 rounded-full bg-amber-400 text-black flex items-center justify-center text-xl font-black" id="profile-avatar">?</div>
+                <div>
+                    <h2 id="profile-name" class="text-lg font-extrabold"></h2>
+                    <p id="profile-contact" class="text-xs text-gray-500"></p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border p-6 space-y-3">
+                <h3 class="text-sm font-extrabold flex items-center gap-2">📦 ประวัติการสั่งซื้อ</h3>
+                <div id="order-history-list" class="space-y-3"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="bg-black text-slate-300 mt-10">
+        <div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+            <div class="space-y-2">
+                <h4 class="text-amber-400 font-extrabold text-sm tracking-wider">KICKOFF STORE</h4>
+                <p class="leading-relaxed">ระบบสั่งซื้อและจองอุปกรณ์กีฬาฟุตบอลออนไลน์ล่วงหน้า เพื่อรับสินค้า ณ หน้าร้าน จองง่าย ลองของจริงก่อนตัดสินใจ</p>
+            </div>
+            <div class="space-y-2">
+                <h4 class="text-white font-bold text-sm">ขั้นตอนการจอง</h4>
+                <ol class="space-y-1 list-decimal list-inside text-slate-400">
+                    <li>สมัครสมาชิกและเข้าสู่ระบบ</li>
+                    <li>เลือกสินค้า ไซส์ และสีที่ต้องการ</li>
+                    <li>นัดวัน-เวลารับสินค้า</li>
+                    <li>ชำระมัดจำ 50% ผ่าน QR Code</li>
+                    <li>มารับสินค้าและชำระส่วนที่เหลือที่ร้าน</li>
+                </ol>
+            </div>
+            <div class="space-y-2">
+                <h4 class="text-white font-bold text-sm">ติดต่อร้าน</h4>
+                <p class="text-slate-400">📍 วิทยาลัยอาชีวศึกษานครราชสีมา</p>
+                <p class="text-slate-400">🕘 เปิดทำการทุกวัน 09:00 - 20:00 น.</p>
+                <p class="text-slate-400">📞 044-xxx-xxx</p>
+                <p class="text-slate-400">✉️ kickoff.store@example.com</p>
+            </div>
+        </div>
+        <div class="border-t border-slate-800 py-4 text-center text-[11px] text-slate-500">
+            © 2569 KICKOFF STORE — โครงงานการพัฒนาเว็บไซต์ระบบสั่งซื้อและจองอุปกรณ์กีฬาฟุตบอลออนไลน์ล่วงหน้าเพื่อรับสินค้า ณ หน้าร้าน
+        </div>
+    </footer>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-box" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 pointer-events-none"></div>
+
+    <!-- PRODUCT DETAIL MODAL -->
+    <div id="product-detail-modal" onclick="closeOnBackdrop(event,'product-detail-modal')" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-lg w-full rounded-3xl overflow-hidden shadow-2xl space-y-4 p-6 relative max-h-[92vh] overflow-y-auto">
+            <button onclick="closeModal('product-detail-modal')" class="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-xs font-bold hover:bg-gray-200 z-10">✕</button>
+            <div class="relative">
+                <img id="modal-img" src="" class="w-full h-72 sm:h-80 object-contain bg-gray-50 rounded-2xl p-3">
+                <span id="modal-tag-badge" class="absolute top-3 left-3 bg-black text-amber-400 text-[11px] font-extrabold px-2.5 py-1 rounded uppercase"></span>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span id="modal-brand-badge" class="text-[11px] font-extrabold text-white bg-slate-800 px-2.5 py-1 rounded-full uppercase tracking-wide"></span>
+                    <span id="modal-category" class="text-xs font-bold text-gray-400 uppercase"></span>
+                </div>
+                <h3 id="modal-title" class="text-xl font-extrabold text-slate-800 mt-2 leading-snug"></h3>
+                <p id="modal-price" class="text-2xl font-black text-amber-600 mt-1"></p>
+                <div class="mt-3 pt-3 border-t">
+                    <p class="text-xs font-bold text-slate-700 mb-1">รายละเอียดสินค้า</p>
+                    <p id="modal-desc" class="text-sm text-gray-600 leading-relaxed"></p>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold mb-2">เลือกไซส์ / ขนาด:</label>
+                <div id="modal-sizes" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div id="modal-colors-wrap" class="hidden">
+                <label class="block text-xs font-bold mb-2">เลือกสี:</label>
+                <div id="modal-colors" class="flex flex-wrap gap-2"></div>
+            </div>
+            <button onclick="addToCartFromModal()" class="w-full bg-amber-400 hover:bg-amber-300 text-black font-bold py-3 rounded-xl transition">
+                เพิ่มลงในตะกร้า
+            </button>
+        </div>
+    </div>
+
+    <!-- CART / CHECKOUT MODAL -->
+    <div id="cart-modal" onclick="closeOnBackdrop(event,'cart-modal')" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-md w-full rounded-3xl overflow-hidden shadow-2xl p-6 relative max-h-[90vh] flex flex-col">
+            <button onclick="closeModal('cart-modal')" class="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-xs font-bold hover:bg-gray-200">✕</button>
+
+            <div id="cart-view" class="flex flex-col flex-grow overflow-hidden space-y-4">
+                <h3 class="text-lg font-bold">ตะกร้าสินค้า</h3>
+                <div id="cart-items" class="flex-grow overflow-y-auto space-y-3 pr-1"></div>
+                <div class="border-t pt-4 space-y-3">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-bold">ราคารวมทั้งหมด:</span>
+                        <span id="cart-total-display" class="text-lg font-black text-amber-600">฿0</span>
+                    </div>
+                    <button id="checkout-btn" onclick="goToCheckout()" class="w-full bg-black text-white font-bold py-3 rounded-xl disabled:bg-gray-300">
+                        ดำเนินการสั่งจอง
+                    </button>
+                </div>
+            </div>
+
+            <div id="checkout-view" class="hidden flex flex-col space-y-4 overflow-y-auto">
+                <button onclick="backToCart()" class="text-xs font-bold text-gray-500 hover:underline text-left">← ย้อนกลับไปตะกร้า</button>
+                <h3 class="text-lg font-bold">รายละเอียดการสั่งจอง</h3>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-800 leading-relaxed">
+                    🏪 <span class="font-bold">รับสินค้าที่หน้าร้านเท่านั้น</span> — ระบบนี้เป็นการ<span class="font-bold">จองล่วงหน้า</span> ไม่มีบริการจัดส่งพัสดุ
+                    กรุณาเดินทางมารับสินค้าตามวัน-เวลาที่นัดหมาย เพื่อตรวจสอบและทดลองสวมใส่ก่อนชำระส่วนที่เหลือ
+                </div>
+
+                <p id="checkout-error" class="hidden text-xs text-red-600 font-bold bg-red-50 border border-red-200 rounded-lg p-2"></p>
+
+                <form onsubmit="handleCheckoutSubmit(event)" class="space-y-3" novalidate>
+                    <div>
+                        <label class="block text-[11px] font-bold mb-1">ชื่อ-นามสกุล ผู้รับสินค้า</label>
+                        <input type="text" id="order-name" placeholder="เช่น สมชาย ใจดี" required class="w-full border p-2.5 rounded-xl text-xs focus:outline-none focus:border-black">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold mb-1">เบอร์โทรศัพท์ (10 หลัก)</label>
+                        <input type="tel" id="order-phone" placeholder="0812345678" inputmode="numeric" maxlength="10" required class="w-full border p-2.5 rounded-xl text-xs focus:outline-none focus:border-black">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold mb-1">วัน-เวลาที่จะมารับสินค้า</label>
+                        <input type="datetime-local" id="pickup-time" required class="w-full border p-2.5 rounded-xl text-xs focus:outline-none focus:border-black">
+                        <p class="text-[10px] text-gray-400 mt-1">เปิดทำการทุกวัน 09:00 - 20:00 น. • จองล่วงหน้าอย่างน้อย 1 ชั่วโมง</p>
+                    </div>
+
+                    <div class="space-y-2 pt-2 border-t">
+                        <label class="block text-xs font-bold">ตัวเลือกการชำระเงิน:</label>
+                        <div class="flex gap-4 text-xs">
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="radio" name="payment-type" value="deposit" checked onchange="updatePayAmountDisplay()">
+                                <span>มัดจำ 50%</span>
+                            </label>
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="radio" name="payment-type" value="full" onchange="updatePayAmountDisplay()">
+                                <span>เต็มจำนวน 100%</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="space-y-1 pt-2 text-xs">
+                        <div class="flex justify-between text-gray-500"><span>ยอดรวมสินค้า</span><span id="checkout-total-display">฿0</span></div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="font-bold text-sm">ยอดที่ต้องชำระทันที:</span>
+                            <span id="pay-amount-display" class="text-lg font-black text-amber-600">฿0</span>
+                        </div>
+                        <div class="flex justify-between text-gray-500"><span>ชำระส่วนที่เหลือวันรับสินค้า</span><span id="remaining-display">฿0</span></div>
+                    </div>
+                    <button type="submit" id="confirm-order-btn" class="w-full bg-amber-400 hover:bg-amber-300 font-bold py-3 rounded-xl transition disabled:bg-gray-300 disabled:cursor-not-allowed">ยืนยันการสั่งจอง</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR PAYMENT / ORDER CONFIRMATION MODAL -->
+    <div id="qr-payment-modal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl p-6 relative text-center space-y-3">
+            <button onclick="closeQrModalAndReset()" class="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-xs font-bold hover:bg-gray-200">✕</button>
+            <div class="text-3xl">✅</div>
+            <h3 class="text-lg font-extrabold">สั่งจองสำเร็จ!</h3>
+            <p class="text-xs text-gray-500">สแกน QR Code ด้านล่างเพื่อชำระเงิน แล้วเก็บสลิปไว้เป็นหลักฐาน</p>
+            <div class="flex justify-center py-2">
+                <div id="qr-code-box" class="p-3 bg-white border rounded-2xl"></div>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-3 text-left text-xs space-y-1">
+                <div class="flex justify-between"><span class="text-gray-500">เลขที่ออเดอร์</span><span id="qr-order-id" class="font-bold"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">ยอดชำระ</span><span id="qr-order-amount" class="font-bold text-amber-600"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">นัดรับสินค้า</span><span id="qr-order-time" class="font-bold"></span></div>
+            </div>
+            <button onclick="closeQrModalAndReset()" class="w-full bg-black text-white font-bold py-3 rounded-xl">เสร็จสิ้น</button>
+        </div>
+    </div>
+
+    <script>
+        // รวมสินค้าอุปกรณ์ฟุตบอลและอุปกรณ์กีฬาหลากแบรนด์
+        const products = [
+            // ================= 1. หมวดรองเท้า (shoes) =================
+            { id: 1, name: "Adidas X Crazyfast.1 FG", brand: "Adidas", category: "shoes", price: 4500, tag: "HOT", image: "images/adidas-crazyfast.jpg", desc: "รองเท้าฟุตบอลสายสปีด น้ำหนักเบาพิเศษ ช่วยในการออกตัวและเร่งความเร็วอย่างมีประสิทธิภาพ", sizes: ["EUR 40", "EUR 41", "EUR 42", "EUR 43"] },
+            { id: 2, name: "Mizuno Morelia Neo IV Beta", brand: "Mizuno", category: "shoes", price: 5200, tag: "NEW", image: "images2/mizuno-morelia.jpg", desc: "รองเท้าฟุตบอลหนังจังการูพรีเมียม สัมผัสนุ่ม ตัดเย็บอย่างประณีต ผลิตในญี่ปุ่น", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42"] },
+            { id: 3, name: "Nike Tiempo Legend 10 Academy", brand: "Nike", category: "shoes", price: 3200, tag: "POPULAR", image: "images2/nike-tiempo.jpg", desc: "รองเท้าฟุตบอลระดับตำนาน หนังสังเคราะห์ FlyTouch Lite นุ่ม คุมบอลแม่นยำ", sizes: ["EUR 40", "EUR 41", "EUR 42", "EUR 43"] },
+            { id: 4, name: "Pan Balancer Touch X Futsal", brand: "Pan", category: "shoes", price: 1890, tag: "BEST VALUE", image: "images2/pan-balancer.jpg", desc: "รองเท้าฟุตซอลแบรนด์ไทยคุณภาพท็อป ยึดเกาะดีเยี่ยม นุ่ม ทนทาน", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42"] },
+            { id: 5, name: "Puma Future Ultimate FG/AG", brand: "Puma", category: "shoes", price: 4900, tag: "PRO", image: "images2/puma-future.jpg", desc: "รองเท้าสายคล่องตัวสูง เทคโนโลยี FUZIONFIT+ กระชับไร้เชือก ยึดเกาะยอดเยี่ยม", sizes: ["EUR 40", "EUR 41", "EUR 42", "EUR 44"] },
+            { id: 6, name: "Ari Control Football Boots", brand: "Ari", category: "shoes", price: 2590, tag: "ARI GEAR", image: "images/ari-boots.jpg", desc: "รองเท้าฟุตบอล Ari ดีไซน์ทรงไทย ปุ่มไฮบริด เล่นได้ทั้งสนามหญ้าจริงและหญ้าเทียม", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42"] },
+            { id: 7, name: "Under Armour Magnetico Select", brand: "Under Armour", category: "shoes", price: 3100, tag: "NEW", image: "images2/ua-magnetico.jpg", desc: "รองเท้าฟุตบอลยืดหยุ่น โอบรับรูปเท้า กระชับมั่นใจทุกการเคลื่อนไหว", sizes: ["EUR 40", "EUR 41", "EUR 42"] },
+            { id: 8, name: "Mizuno Sala Classic IN", brand: "Mizuno", category: "shoes", price: 2200, tag: "BEST", image: "images2/mizuno-sala.jpg", desc: "รองเท้าฟุตซอลสายซัพพอร์ต ยึดเกาะพื้นปูนและพื้นปาร์เก้ได้อย่างสมบูรณ์แบบ", sizes: ["EUR 39", "EUR 40", "EUR 41"] },
+
+            // ================= 2. หมวดเสื้อสโมสร (club-apparel) =================
+            { id: 9, name: "เสื้อแข่ง Real Madrid Home 24/25", brand: "Adidas", category: "club-apparel", price: 2900, tag: "NEW", image: "images2/real-madrid.jpg", desc: "เสื้อแข่งเหย้าราชันชุดขาว ฤดูกาลใหม่ ผ้า Aeroready ระบายอากาศยอดเยี่ยม", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 10, name: "เสื้อแข่ง Arsenal Home 24/25", brand: "Adidas", category: "club-apparel", price: 2900, tag: "HOT", image: "images/arsenal.jpg", desc: "เสื้อแข่งเหย้าปืนใหญ่ อาร์เซนอล ดีไซน์คลาสสิก สีแดงตัดขาวสวยงาม", sizes: ["S", "M", "L", "XL"] },
+            { id: 11, name: "เสื้อแข่ง Liverpool Home 24/25", brand: "Nike", category: "club-apparel", price: 2900, tag: "POPULAR", image: "images2/liverpool.jpg", desc: "เสื้อแข่งเหย้าหงส์แดง ลิเวอร์พูล ผ้า Dri-FIT ADV ซับเหงื่อและแห้งไว", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 12, name: "เสื้อแข่ง Man City Home 24/25", brand: "Puma", category: "club-apparel", price: 2800, tag: "NEW", image: "images2/mancity.jpg", desc: "เสื้อแข่งเหย้าเรือใบสีฟ้า ผ้า Ultraweave เบาพิเศษเหมือนนักเตะระดับโลก", sizes: ["S", "M", "L", "XL"] },
+            { id: 13, name: "เสื้อแข่ง Bangkok United Home (Ari)", brand: "Ari", category: "club-apparel", price: 1190, tag: "ARI / THAI LEAGUE", image: "images/bangkok-utd.jpg", desc: "เสื้อแข่งสโมสรทรู แบงค็อก ยูไนเต็ด ผลิตโดย Ari Gear เนื้อผ้าพรีเมียม", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 14, name: "เสื้อแข่งทีมชาติไทย Grand Sport Home", brand: "Grand Sport", category: "club-apparel", price: 990, tag: "THAILAND", image: "images2/thailand.jpg", desc: "เสื้อแข่งทีมชาติไทยรุ่นล่าสุด ผ้านุ่ม น้ำหนักเบา ระบายอากาศดีเยี่ยม", sizes: ["S", "M", "L", "XL", "2XL"] },
+
+            // ================= 3. หมวดเสื้อยืดเล่นกีฬา (tshirt) =================
+            { id: 15, name: "Ari Essential 2Tones Team Jersey", brand: "Ari", category: "tshirt", price: 350, tag: "BEST SELLER", image: "images/ari-collection-tee.jpg", desc: "เสื้อซ้อมฟุตบอลคอลเลกชันยอดฮิต ผ้าระบายอากาศได้ดี ตัดสลับสองสีสุดคูล", sizes: ["S", "M", "L", "XL", "2XL"], colors: ["ดำ", "ขาว", "น้ำเงิน", "แดง", "ชมพู", "เหลือง"] },
+            { id: 16, name: "Ari Adept Iconic Team Jersey", brand: "Ari", category: "tshirt", price: 590, tag: "NEW ARRIVAL", image: "images/ari-team-tee.jpg", desc: "เสื้อแข่งขันทีมเวียร์ ออกแบบทรงเข้ารูป ทนทาน ไม่ย้วยง่าย", sizes: ["S", "M", "L", "XL"], colors: ["ดำ", "ขาว", "กรมท่า", "แดง", "ฟ้า", "ส้ม", "ม่วง"] },
+            { id: 17, name: "Nike Dri-FIT Legend Tee", brand: "Nike", category: "tshirt", price: 900, tag: "POPULAR", image: "images2/nike-black-tee.jpg", desc: "เสื้อยืดออกกำลังกายทรงมาตรฐาน ผ้านุ่มใส่สบาย ระบายเหงื่อได้ดี", sizes: ["S", "M", "L", "XL"] },
+            { id: 18, name: "Techfit Training Compression Shirt", brand: "อื่นๆ", category: "tshirt", price: 1100, tag: "FIT", image: "images2/compression-base-layer.jpg", desc: "เสื้อรัดรูปใส่ออกกำลังกาย ช่วยซัพพอร์ตกล้ามเนื้อ ลดความเหนื่อยล้า", sizes: ["S", "M", "L", "XL"] },
+            { id: 19, name: "Under Armour Tech 2.0 Short Sleeve", brand: "Under Armour", category: "tshirt", price: 990, tag: "DRY", image: "images2/under-armour-black-tee.jpg", desc: "เนื้อผ้า UA Tech ให้สัมผัสนุ่มและแห้งเร็ว มอบความสบายยามฝึกซ้อม", sizes: ["S", "M", "L", "XL"] },
+
+            // ================= 4. หมวดกางเกงกีฬา (shorts) =================
+            { id: 21, name: "Ari Essential Team Shorts", brand: "Ari", category: "shorts", price: 290, tag: "ARI GEAR", image: "images/ari-black-shorts.jpg", desc: "กางเกงฟุตบอลขาสั้น ผ้านุ่มน้ำหนักเบา คล่องตัวในทุกการเคลื่อนไหว", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 22, name: "Ari Pro Training Shorts", brand: "Ari", category: "shorts", price: 590, tag: "NEW", image: "images2/ri-sport-shorts.jpg", desc: "กางเกงขาสั้นใส่ออกกำลังกายรุ่นโปร นุ่ม เบา เคลื่อนไหวได้อย่างอิสระ", sizes: ["S", "M", "L", "XL"] },
+            { id: 23, name: "Grand Sport Football Shorts", brand: "Grand Sport", category: "shorts", price: 250, tag: "CHEAP", image: "images2/grandsport-black-shorts.jpg", desc: "กางเกงฟุตบอลขาสั้น เอวยางยืดพร้อมสายปรับระดับ ใส่สบาย ระบายอากาศดี", sizes: ["S", "M", "L", "XL"] },
+            { id: 24, name: "Nike Strike Short Pro", brand: "Nike", category: "shorts", price: 1200, tag: "PRO", image: "images2/nike-navy-shorts.jpg", desc: "กางเกงกีฬาขาสั้น ผ้ายืดหยุ่นสูง มีกระเป๋าซิปข้างสำหรับใส่ของสำคัญ", sizes: ["S", "M", "L", "XL"] },
+            { id: 25, name: "Adidas Squadra 21 Shorts", brand: "Adidas", category: "shorts", price: 650, tag: "BEST", image: "images/adidas-3stripe-shorts.jpg", desc: "กางเกงขาสั้นฝึกซ้อม Aeroready น้ำหนักเบา ระบายอากาศดีเยี่ยม", sizes: ["S", "M", "L", "XL"] },
+
+            // ================= 5. หมวดแจ็คเก็ต & วอร์ม (jackets) =================
+            { id: 26, name: "Ari Football Anthem Track Jacket", brand: "Ari", category: "jackets", price: 1890, tag: "ARI GEAR", image: "images/ari-graphic-jacket.jpg", desc: "เสื้อแจ็คเก็ตวอร์ม Ari ดีไซน์สปอร์ตพรีเมียม ใส่คลุมก่อนแข่งขันหรือใส่เที่ยว", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 28, name: "Nike Academy Windbreaker", brand: "Nike", category: "jackets", price: 2100, tag: "NEW", image: "images2/nike-black-windbreaker.jpg", desc: "เสื้อกันลมเนื้อผ้าบางเบา กันละอองฝนและลมเย็นได้ดี เหมาะสำหรับซ้อมกลางแจ้ง", sizes: ["S", "M", "L", "XL"] },
+            { id: 29, name: "Grand Sport Tracksuit Jacket", brand: "Grand Sport", category: "jackets", price: 890, tag: "THAI", image: "images2/grandsport-purple-track-jacket.jpg", desc: "เสื้อวอร์ม Grandsport ผ้าวอร์มเนื้อหนานุ่ม กันลมและกันหนาวได้อย่างดี", sizes: ["S", "M", "L", "XL"] },
+
+            // ================= 6. หมวดถุงเท้ากีฬา (socks) =================
+            { id: 30, name: "Ari Hex Grip Socks", brand: "Ari", category: "socks", price: 390, tag: "GRIP PRO", image: "images/ari-white-grip-socks.jpg", desc: "ถุงเท้ากันลื่นระดับมืออาชีพ แถบซิลิโคนหกเหลี่ยม ล็อคเท้าแน่นไม่ลื่นหลุด", sizes: ["M (38-42)", "L (42-46)"] },
+            { id: 31, name: "Ari Crew Socks (3 Pairs Pack)", brand: "Ari", category: "socks", price: 290, tag: "PACK 3", image: "images/ari-white-box-socks.jpg", desc: "แพ็คถุงเท้าขอกึ่งยาว 3 คู่ นุ่ม ซับเหงื่อได้ดี เหมาะสำหรับซ้อมทุกวัน", sizes: ["Free Size"] },
+            { id: 32, name: "Nike Football Socks Dri-FIT", brand: "Nike", category: "socks", price: 350, tag: "POPULAR", image: "images2/nike-white-long-socks.jpg", desc: "ถุงเท้าฟุตบอลทรงยาว หนานุ่ม ซัพพอร์ตข้อเท้าและฝ่าเท้า", sizes: ["Free Size"] },
+            { id: 33, name: "Grip Socks Anti-Slip", brand: "อื่นๆ", category: "socks", price: 190, tag: "VALUABLE", image: "images2/grip-socks-black.jpg", desc: "ถุงเท้ากันลื่น เพิ่มแรงยึดเกาะกับพื้นรองเท้าด้านใน", sizes: ["Free Size"] },
+
+            // ================= 7. หมวดลูกฟุตบอล & อุปกรณ์ (equipment) =================
+            { id: 35, name: "Molten Vantaggio 5000 (FIFA Pro)", brand: "Molten", category: "equipment", price: 3100, tag: "MATCH BALL", image: "images2/molten-blue-football.jpg", desc: "ลูกฟุตบอลหนังอัดความร้อน เกรดแข่งขันระดับนานาชาติ FIFA Quality Pro", sizes: ["Size 5"] },
+            { id: 36, name: "Molten Futsal Ball F9A1500", brand: "Molten", category: "equipment", price: 690, tag: "FUTSAL", image: "images2/molten-yellow-football.jpg", desc: "ลูกฟุตซอลมาตรฐานสำหรับการฝึกซ้อม เด้งน้อย ควบคุมง่าย", sizes: ["Size 3.5 (Futsal)"] },
+            { id: 37, name: "Adidas UCL League Champions League", brand: "Adidas", category: "equipment", price: 1400, tag: "UCL", image: "images/adidas-football.jpg", desc: "ลูกฟุตบอลลาย ยูฟ่า แชมเปียนส์ลีก สวยงาม เด้งดี ควบคุมง่าย", sizes: ["Size 5"] },
+            { id: 38, name: "Nike Flight Premier League Ball", brand: "Nike", category: "equipment", price: 4200, tag: "OFFICIAL", image: "images2/nike-yellow-football.jpg", desc: "ลูกฟุตบอลแข่งขันอย่างเป็นทางการพรีเมียร์ลีก วิถีลูกนิ่งและแม่นยำสูง", sizes: ["Size 5"] },
+            { id: 39, name: "Goalkeeper Gloves Pro Grip", brand: "อื่นๆ", category: "equipment", price: 1290, tag: "GK GLOVES", image: "images2/goalkeeper-gloves.jpg", desc: "ถุงมือผู้รักษาประตู โฟมเยอรมันยึดเกาะสูง ป้องกันนิ้วซ้นด้วย Finger Save", sizes: ["Size 8", "Size 9", "Size 10"] },
+            { id: 40, name: "ที่สูบลมลูกบอลอัจฉริยะ Ari Mini Pump", brand: "Ari", category: "equipment", price: 250, tag: "MUST HAVE", image: "images/ari-pump-set.jpg", desc: "ที่สูบลมขนาดพกพา พร้อมเข็มสูบในตัว สูบลมได้เร็วและเบาแรง", sizes: ["Standard"] },
+
+            // ================= 8. หมวดอุปกรณ์เซฟตี้ (protection) =================
+            { id: 41, name: "Ari Essential Shin Guard", brand: "Ari", category: "protection", price: 290, tag: "ARI GEAR", image: "images/ari-white-shin-guards.jpg", desc: "สนับแข้งขนาดโค้งรับรูปหน้าแข้ง กระชับ น้ำหนักเบา ซับแรงกระแทกได้เยี่ยม", sizes: ["S", "M", "L"] },
+            { id: 42, name: "Nike Charge Shin Guards", brand: "Nike", category: "protection", price: 650, tag: "SAFETY", image: "images2/nike-shin-guards.jpg", desc: "สนับแข้งฟุตบอล น้ำหนักเบา เคสแข็งทนทาน ป้องกันการกระแทกได้อย่างดีเยี่ยม", sizes: ["S", "M", "L"] },
+            { id: 43, name: "Ankle Support Sleeve", brand: "อื่นๆ", category: "protection", price: 250, tag: "SUPPORT", image: "images/ankle-support-sleeve.jpg", desc: "ปลอกผ้าพันข้อเท้า ช่วยลดความเสี่ยงข้อเท้าพลิก สวมใส่ง่าย ใส่ร่วมกับถุงเท้าได้", sizes: ["M", "L"] },
+            { id: 44, name: "สเปรย์บรรเทาปวดพกพา Cold Spray 150ml", brand: "อื่นๆ", category: "protection", price: 290, tag: "FIRST AID", image: "images2/cold-spray.jpg", desc: "สเปรย์เย็นให้ความเย็นปะทะทันที ลดอาการฟกช้ำและปวดกล้ามเนื้อระหว่างแข่ง", sizes: ["150 ml"] },
+
+            // ================= 9. หมวดอุปกรณ์ซ้อม & โค้ช (training-gear) =================
+            { id: 45, name: "Ari Training Cones (เซ็ต 10 ชิ้น)", brand: "Ari", category: "training-gear", price: 290, tag: "SET", image: "images/ari-training-cones.jpg", desc: "กรวยจานซ้อมบอลพลาสติกเหนียว ทนทาน ไม่แตกหักง่ายเมื่อถูกเหยียบ", sizes: ["Set of 10"] },
+            { id: 46, name: "Agility Ladder บันไดลิงฝึกความเร็ว 6M", brand: "Grand Sport", category: "training-gear", price: 490, tag: "DRILL", image: "images2/grand-sport-speed-agility-ladder.jpg", desc: "ชุดบันไดสปีดฝึกความคล่องตัว ความยาว 6 เมตร พร้อมถุงจัดเก็บ", sizes: ["Standard 6m"] },
+            { id: 47, name: "Pop-Up Mini Goal (คู่)", brand: "อื่นๆ", category: "training-gear", price: 1490, tag: "POP-UP GOAL", image: "images2/pop-up-mini-goal.jpg", desc: "ประตูฟุตบอลป็อบอัพขนาดพกพา กางออกและพับเก็บได้ใน 5 วินาที สำหรับซ้อมยิง", sizes: ["Pair (2 Goals)"] },
+            { id: 48, name: "Ari Captain Armband ปลอกแขนกัปตันทีม", brand: "Ari", category: "training-gear", price: 190, tag: "CAPTAIN", image: "images/ari-captain-armband-new.jpg", desc: "ปลอกแขนกัปตันทีมสีสันสดใส ยางยืดกระชับแขนไม่หลุดง่าย", sizes: ["Free Size"] },
+            { id: 49, name: "นกหวีด Fox 40 Classic Coach", brand: "อื่นๆ", category: "training-gear", price: 350, tag: "COACH", image: "images2/fox40-whistle.jpg", desc: "นกหวีดระดับโลก ให้เสียงดังสะท้อนกังวาน ไม่ติดขัด ไร้ลูกลิ้ง", sizes: ["Standard"] },
+
+            // ================= 10. หมวดกระเป๋า (bags) =================
+            { id: 50, name: "Ari Shoe Bag 2026", brand: "Ari", category: "bags", price: 390, tag: "ARI GEAR", image: "images/ari-shoe-bag-new.jpg", desc: "กระเป๋าใส่รองเท้าฟุตบอล Ari มีช่องระบายอากาศ ไม่อับชื้น ผ้ากันน้ำ", sizes: ["One Size"] },
+            { id: 51, name: "Ari Team Duffle Bag (กระเป๋ากีฬา)", brand: "Ari", category: "bags", price: 1290, tag: "DUFFLE", image: "images/ari-duffel-bag.jpg", desc: "กระเป๋ากีฬาใบใหญ่ จุชุดแข่ง อุปกรณ์ และรองเท้าครบจบในใบเดียว", sizes: ["Large 55L"] },
+            { id: 52, name: "Adidas Linear Backpack", brand: "Adidas", category: "bags", price: 1100, tag: "EVERYDAY", image: "images/adidas-backpack.jpg", desc: "กระเป๋าเป้สะพายหลัง จุของได้เยอะ มีช่องใส่รองเท้าแยกด้านล่าง", sizes: ["One Size"] },
+            { id: 53, name: "Under Armour Undeniable 5.0 Duffle Bag", brand: "Under Armour", category: "bags", price: 1690, tag: "PRO", image: "images2/under-armour-duffel-bag.jpg", desc: "กระเป๋ากีฬากันน้ำ เคลือบสารกันน้ำทนทานสูง ช่องใส่ของกว้างขวาง", sizes: ["Medium 58L"] },
+
+            // ================= 11. หมวดหมวก & แอคเซสเซอรี่ (accessories) =================
+            { id: 55, name: "Ari Shoe Tree ดันทรงรองเท้า", brand: "Ari", category: "accessories", price: 190, tag: "CARE", image: "images/ari-shoe-trees.jpg", desc: "หุ่นดันทรงรองเท้าฟุตบอล ช่วยรักษารูปทรงรองเท้าไม่ให้เสียทรงหลังใช้งาน", sizes: ["Free Size"], colors: ["ดำ", "ชมพู", "ม่วง", "ฟ้า", "เขียว"] },
+            { id: 57, name: "Ari Heritage Cap Black", brand: "Ari", category: "accessories", price: 590, tag: "STYLE", image: "images/ari-cap.jpg", desc: "หมวกแก๊ป Ari ปักโลโก้สุดคลาสสิก ปรับขนาดได้ กันแดดใส่ออกกำลังกาย", sizes: ["Adjustable"] },
+            { id: 58, name: "Nike Heritage Cap Black", brand: "Nike", category: "accessories", price: 750, tag: "STYLE", image: "images2/nike-cap.jpg", desc: "หมวกแก๊ปสไตล์สปอร์ต ปรับขนาดได้ ป้องกันแสงแดดขณะซ้อมกลางแจ้ง", sizes: ["Adjustable"] },
+            { id: 59, name: "Under Armour Performance Headband", brand: "Under Armour", category: "accessories", price: 350, tag: "DRY", image: "images2/under-armour-headband.jpg", desc: "ผ้ารัดซับเหงื่อหน้าผาก ซับเหงื่อดีเยี่ยม ป้องกันเหงื่อเข้าตาขณะเล่นกีฬา", sizes: ["Free Size"] },
+
+            // ================= สินค้าเพิ่มเติม 10 รายการต่อหมวดหมู่ (NEW) =================
+            { id: 60, name: "Phantom GX Elite", brand: "Puma", category: "shoes", price: 3340, tag: "HOT", image: "images/adidas-phantom.jpg", desc: "รองเท้าฟุตบอลรุ่นเรือธง ดีไซน์ไร้เชือกสัมผัสบอลได้เต็มพื้นผิว เกาะสนามดีในทุกจังหวะบุก", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42", "EUR 43", "EUR 44"] },
+            { id: 61, name: "Puma Ultra Match", brand: "Puma", category: "shoes", price: 2240, tag: "BEST SELLER", image: "images2/puma-ultra.jpg", desc: "รองเท้าฟุตบอลสายความเร็ว น้ำหนักเบา พื้นยึดเกาะดี เหมาะกับนักเตะที่เน้นการวิ่งทำสปีด", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42", "EUR 43", "EUR 44"] },
+            { id: 62, name: "Adidas Copa Pure", brand: "Adidas", category: "shoes", price: 4290, tag: "NEW", image: "images/adidas-copa.jpg", desc: "รองเท้าฟุตบอลหนังนุ่มไร้เชือกผูก สัมผัสบอลนุ่มละมุน เหมาะกับเกมคุมจังหวะ", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42", "EUR 43", "EUR 44"] },
+            { id: 63, name: "Nike Predator Edge", brand: "Nike", category: "shoes", price: 2940, tag: "HOT", image: "images2/nike-predator.jpg", desc: "รองเท้าฟุตบอลพื้นผิวเพิ่มแรงเสียดทาน ช่วยเพิ่มความแม่นยำในการจ่ายและยิงบอล", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42", "EUR 43", "EUR 44"] },
+            { id: 64, name: "Kelme Copa Pure", brand: "Kelme", category: "shoes", price: 1740, tag: "BEST SELLER", image: "images2/kelme-copa.jpg", desc: "รองเท้าฟุตบอลทรงสวย น้ำหนักเบา ราคาคุ้มค่า เหมาะสำหรับนักเตะทั่วไปและมือใหม่", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42", "EUR 43", "EUR 44"] },
+            { id: 65, name: "Nike Vapor 15 Academy", brand: "Nike", category: "shoes", price: 5740, tag: "BEST SELLER", image: "images2/nike-vapo.jpg", desc: "รองเท้าฟุตบอลสายสปีดรุ่นเรียนรู้ น้ำหนักเบา ใส่ซ้อมหรือแข่งได้สบายเท้า", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42", "EUR 43", "EUR 44"] },
+            { id: 67, name: "Nike Phantom GX Elite", brand: "Nike", category: "shoes", price: 2590, tag: "PRO", image: "images2/nike-phantom.jpg", desc: "รองเท้าฟุตบอลเรือธงเพื่อความคล่องตัว ดีไซน์กระชับรอบเท้า ช่วยคุมบอลและเลี้ยงหลบได้อย่างมั่นใจ", sizes: ["EUR 39", "EUR 40", "EUR 41", "EUR 42", "EUR 43", "EUR 44"] },
+            { id: 70, name: "เสื้อแข่ง AC Milan Home 24/25", brand: "Puma", category: "club-apparel", price: 2090, tag: "POPULAR", image: "images/ac-milan.jpg", desc: "เสื้อแข่งเหย้าปีศาจแดง-ดำ เอซี มิลาน ดีไซน์คลาสสิกลายทาง ผ้าระบายอากาศดี", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 71, name: "เสื้อแข่ง BG Pathum United Home", brand: "Nike", category: "club-apparel", price: 2440, tag: "NEW", image: "images/bg-pathum.jpg", desc: "เสื้อแข่งเหย้าสโมสรบีจี ปทุม ยูไนเต็ด ผ้าเนื้อเบา สวมใส่สบายทั้งซ้อมและเชียร์", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 72, name: "เสื้อแข่ง Bayern Munich Home 24/25", brand: "Adidas", category: "club-apparel", price: 2740, tag: "POPULAR", image: "images/bayern-munich.jpg", desc: "เสื้อแข่งเหย้าเสือใต้ บาเยิร์น มิวนิค สีแดงเข้มทรงพลัง ผ้า Aeroready ซับเหงื่อดี", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 74, name: "เสื้อแข่ง Barcelona Home 24/25", brand: "Nike", category: "club-apparel", price: 1690, tag: "POPULAR", image: "images/barcelona.jpg", desc: "เสื้อแข่งเหย้าบาร์เซโลนา ลายทางน้ำเงิน-แดงอันเป็นเอกลักษณ์ ผ้า Dri-FIT ระบายอากาศดี", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 75, name: "เสื้อแข่ง Chelsea Home 24/25", brand: "Nike", category: "club-apparel", price: 1290, tag: "LIMITED", image: "images/chelsea.jpg", desc: "เสื้อแข่งเหย้าสิงห์บลูส์ เชลซี สีน้ำเงินคลาสสิก ผ้าเบาสวมใส่สบาย", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 76, name: "เสื้อแข่ง Tottenham Home 24/25", brand: "Nike", category: "club-apparel", price: 2140, tag: "HOT", image: "images2/tottenham.jpg", desc: "เสื้อแข่งเหย้าไก่เดือยทอง ท็อตแนม ฮอตสเปอร์ สีขาวสะอาดตา ผ้าระบายอากาศดี", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 78, name: "Adidas Muangthong United Home", brand: "Adidas", category: "club-apparel", price: 1490, tag: "HOT", image: "images2/muangthong.jpg", desc: "เสื้อแข่งเหย้าสโมสรเมืองทอง ยูไนเต็ด สีกรมท่า-ส้ม ผ้า Aeroready สวมใส่สบาย", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 80, name: "Grand Sport Essential Team Tee", brand: "Grand Sport", category: "tshirt", price: 750, tag: "BEST VALUE", image: "images2/grandsport-blue-tee.jpg", desc: "เสื้อยืดซ้อมทีมทรงมาตรฐาน ผ้าโพลีเอสเตอร์เบาสบาย ระบายเหงื่อได้ดี ราคาคุ้มค่า", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 81, name: "Ari Essential Team Tee", brand: "Ari", category: "tshirt", price: 900, tag: "NEW", image: "images/ari-training-tee.jpg", desc: "เสื้อยืดซ้อมทีมทรงเบสิก ผ้านุ่มใส่สบาย เหมาะกับการฝึกซ้อมประจำวัน", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 82, name: "Adidas Compression Base Layer", brand: "Adidas", category: "tshirt", price: 450, tag: "NEW", image: "images/adidas-black-tee.jpg", desc: "เสื้อรัดกล้ามเนื้อชั้นในสวมกระชับ ช่วยพยุงกล้ามเนื้อและระบายความร้อนขณะเล่นกีฬา", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 83, name: "Nike Power Fit Tee", brand: "Nike", category: "tshirt", price: 400, tag: "DRY-FIT", image: "images2/nike-sport-tee.jpg", desc: "เสื้อยืดออกกำลังกายทรงกระชับ ผ้ายืดหยุ่นสูง ใส่สบายเคลื่อนไหวคล่องตัว", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 84, name: "Puma Quick Dry Practice Tee", brand: "Puma", category: "tshirt", price: 350, tag: "BEST VALUE", image: "images2/puma-pattern-tee.jpg", desc: "เสื้อยืดซ้อมเนื้อผ้าแห้งไว ระบายเหงื่อดี เหมาะกับการฝึกซ้อมในวันที่อากาศร้อน", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 85, name: "Nike Essential Team Tee", brand: "Nike", category: "tshirt", price: 800, tag: "BEST VALUE", image: "images2/nike-green-tee.jpg", desc: "เสื้อยืดทีมทรงมาตรฐาน ผ้าเบา ระบายอากาศดี ใส่ซ้อมได้ทุกวัน", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 87, name: "Adidas Essential Team Tee", brand: "Adidas", category: "tshirt", price: 350, tag: "DRY-FIT", image: "images/adidas-grey-tee.jpg", desc: "เสื้อยืดทีมทรงเบสิก ผ้า Aeroready ซับเหงื่อเร็ว แห้งไว", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 88, name: "Ari Dri-Fit Training Tee", brand: "Ari", category: "tshirt", price: 900, tag: "NEW", image: "images/ari-training-te.jpg", desc: "เสื้อยืดซ้อมเนื้อผ้า Dri-Fit ระบายความชื้นดี ใส่สบายตลอดการฝึกซ้อม", sizes: ["S", "M", "L", "XL", "2XL"], colors: ["ดำ", "ขาว", "น้ำเงิน", "ฟ้า", "ชมพู", "แดง", "เขียว"] },
+            { id: 89, name: "Nike Active Performance Tee", brand: "Nike", category: "tshirt", price: 850, tag: "DRY-FIT", image: "images2/nike-swoosh-tee.jpg", desc: "เสื้อยืดออกกำลังกายเนื้อผ้าเบาพิเศษ ระบายอากาศดี เหมาะกับกิจกรรมกีฬาทุกประเภท", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 91, name: "Puma Essential Match Shorts", brand: "Puma", category: "shorts", price: 1050, tag: "PRO", image: "images2/puma-navy-shorts.jpg", desc: "กางเกงฟุตบอลขาสั้นทรงมาตรฐาน เอวยางยืด ใส่ลงสนามแข่งขันได้คล่องตัว", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 92, name: "Under Armour Compression Base Shorts", brand: "Under Armour", category: "shorts", price: 400, tag: "PRO", image: "images2/under-armour-compression.jpg", desc: "กางเกงรัดกล้ามเนื้อชั้นใน ช่วยพยุงกล้ามเนื้อขาและลดอาการล้าขณะเล่นกีฬา", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 93, name: "Under Armour Academy Pro Shorts", brand: "Under Armour", category: "shorts", price: 400, tag: "PRO", image: "images2/under-armour-shorts.jpg", desc: "กางเกงกีฬาขาสั้นทรงสปอร์ต ผ้ายืดหยุ่นสูง เหมาะกับการซ้อมและแข่งขัน", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 94, name: "Grand Sport Strike Woven Shorts", brand: "Grand Sport", category: "shorts", price: 950, tag: "NEW", image: "images2/grandsport-sport-shorts.jpg", desc: "กางเกงฟุตบอลขาสั้นผ้าทอ เอวยางยืดพร้อมเชือกปรับ ระบายอากาศดี", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 95, name: "Adidas Dri-Fit Referee Shorts", brand: "Adidas", category: "shorts", price: 500, tag: "NEW", image: "images/adidas-black-shorts.jpg", desc: "กางเกงขาสั้นสำหรับผู้ตัดสิน เนื้อผ้า Dri-Fit ระบายเหงื่อดี ใส่สบายตลอดเกม", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 97, name: "Adidas Strike Woven Shorts", brand: "Adidas", category: "shorts", price: 1100, tag: "NEW", image: "images/adidas-training-shorts.jpg", desc: "กางเกงฟุตบอลขาสั้นผ้าทอ ทรงสปอร์ต น้ำหนักเบา ใส่ซ้อมหรือแข่งขันได้ดี", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 100, name: "Ari Tiro Track Top", brand: "Ari", category: "jackets", price: 1140, tag: "NEW", image: "images/ari-black-jacket.jpg", desc: "เสื้อแทร็คท็อปแขนยาวสำหรับใส่คลุมก่อน-หลังซ้อม กันลมได้ดี ใส่เที่ยวได้เท่ๆ", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 101, name: "Grand Sport Storm Windbreaker", brand: "Grand Sport", category: "jackets", price: 2590, tag: "CLASSIC", image: "images2/grandsport-windbreaker.jpg", desc: "แจ็คเก็ตกันลมน้ำหนักเบา ป้องกันสายลมและฝนปรอย เหมาะกับวันซ้อมที่อากาศแปรปรวน", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 102, name: "Adidas Thermal Warm-Up Jacket", brand: "Adidas", category: "jackets", price: 2390, tag: "CLASSIC", image: "images/adidas-track-jacket.jpg", desc: "แจ็คเก็ตวอร์มบุซับในให้ความอบอุ่น เหมาะใส่ก่อนและหลังการแข่งขันในวันอากาศเย็น", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 104, name: "Puma Thermal Warm-Up Jacket", brand: "Puma", category: "jackets", price: 1490, tag: "THAI", image: "images2/puma-grey-track-jacket.jpg", desc: "แจ็คเก็ตวอร์มเก็บความร้อนในตัว ใส่คลุมก่อนลงซ้อมช่วยให้กล้ามเนื้ออบอุ่นพร้อมเล่น", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 105, name: "Grand Sport Thermal Warm-Up Jacket", brand: "Grand Sport", category: "jackets", price: 2040, tag: "WINTER", image: "images2/grandsport-blue-jacket.jpg", desc: "แจ็คเก็ตวอร์มกันหนาว ผ้าหนาน้ำหนักเบา ใส่อุ่นสบายระหว่างรอลงสนาม", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 106, name: "Puma Academy Rain Jacket", brand: "Puma", category: "jackets", price: 1240, tag: "CLASSIC", image: "images2/puma-windbreaker.jpg", desc: "แจ็คเก็ตกันฝนสำหรับนักกีฬา เนื้อผ้ากันน้ำ ป้องกันตัวเปียกระหว่างซ้อมในวันฝนตก", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 107, name: "Adidas Storm Windbreaker", brand: "Adidas", category: "jackets", price: 1940, tag: "NEW", image: "images/adidas-blue-windbreaker.jpg", desc: "แจ็คเก็ตกันลมเนื้อผ้าบางเบา พับเก็บง่าย พกพาสะดวกเวลาเดินทางไปแข่งขัน", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 108, name: "Puma Condivo Training Jacket", brand: "Puma", category: "jackets", price: 1590, tag: "CLASSIC", image: "images2/puma-black-track-jacket.jpg", desc: "แจ็คเก็ตซ้อมทรงสปอร์ต ผ้ายืดหยุ่นเคลื่อนไหวคล่องตัว เหมาะกับการฝึกซ้อมทุกวัน", sizes: ["S", "M", "L", "XL", "2XL"] },
+            { id: 110, name: "Ari Match Grip Socks", brand: "Ari", category: "socks", price: 250, tag: "GRIP PRO", image: "images/ari-black-long-socks.jpg", desc: "ถุงเท้าฟุตบอลมีปุ่มยางกันลื่นด้านใน ช่วยยึดเท้าให้กระชับกับรองเท้าขณะเล่น", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 111, name: "Mizuno Performance Crew Socks", brand: "Mizuno", category: "socks", price: 250, tag: "VALUABLE", image: "images2/mizuno-stripe-socks.jpg", desc: "ถุงเท้ากีฬาทรงยาวถึงน่อง ผ้าซับเหงื่อดี กระชับข้อเท้า ใส่สบายตลอดการซ้อม", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 112, name: "Nike Team Stripe Socks", brand: "Nike", category: "socks", price: 200, tag: "VALUABLE", image: "images2/nike-grip-long-socks.jpg", desc: "ถุงเท้าฟุตบอลลายทีมคลาสสิก ผ้ายืดหยุ่นกระชับขา เหมาะใส่คู่กับชุดแข่ง", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 114, name: "Adidas Compression Sport Socks", brand: "Adidas", category: "socks", price: 300, tag: "VALUABLE", image: "images/adidas-black-football-socks.jpg", desc: "ถุงเท้ารัดกล้ามเนื้อน่อง ช่วยกระตุ้นการไหลเวียนเลือดและลดอาการล้าขาขณะเล่นกีฬา", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 115, name: "Adidas Match Grip Socks", brand: "Adidas", category: "socks", price: 400, tag: "GRIP PRO", image: "images/adidas-white-grip-socks.jpg", desc: "ถุงเท้าฟุตบอลมีปุ่มยางกันลื่น ยึดเกาะรองเท้าได้ดี ลดการบาดเจ็บขณะวิ่ง", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 116, name: "Anti-Blister Socks (Classic)", brand: "อื่นๆ", category: "socks", price: 400, tag: "POPULAR", image: "images/black-long-socks.jpg", desc: "ถุงเท้ากันแผลพองรุ่นคลาสสิก เนื้อผ้าลดแรงเสียดทาน ป้องกันการเกิดแผลพองที่ส้นเท้า", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 117, name: "Ari Performance Crew Socks", brand: "Ari", category: "socks", price: 200, tag: "PACK 3", image: "images/ari-white-socks.jpg", desc: "ถุงเท้ากีฬาทรงยาว ผ้าระบายอากาศดี กระชับข้อเท้า เหมาะกับการซ้อมทุกวัน", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 118, name: "Mizuno Anti-Blister Socks", brand: "Mizuno", category: "socks", price: 200, tag: "VALUABLE", image: "images2/mizuno-white-socks.jpg", desc: "ถุงเท้ากันแผลพอง เนื้อผ้าพิเศษลดแรงเสียดทานระหว่างเท้ากับรองเท้า ป้องกันแผลพองขณะวิ่ง", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 119, name: "Nike Compression Sport Socks", brand: "Nike", category: "socks", price: 300, tag: "PACK 3", image: "images2/nike-pink-grip-socks.jpg", desc: "ถุงเท้ารัดกล้ามเนื้อน่อง ช่วยพยุงกล้ามเนื้อขาและลดความเมื่อยล้าหลังการแข่งขัน", sizes: ["Free Size", "M (38-42)", "L (42-46)"] },
+            { id: 120, name: "Free Kick Wall Dummy (แดง)", brand: "อื่นๆ", category: "equipment", price: 3750, tag: "MATCH BALL", image: "images2/red-training-manikins.jpg", desc: "หุ่นจำลองกำแพงสำหรับฝึกยิงลูกฟรีคิก น้ำหนักเบา ตั้งได้รวดเร็ว ใช้ซ้อมได้ทั้งทีมและเดี่ยว", sizes: ["Set of 3"] },
+            { id: 124, name: "Nike Ball Pump Set", brand: "Nike", category: "equipment", price: 3150, tag: "MUST HAVE", image: "images2/nike-mini-pump.jpg", desc: "ชุดสูบลมลูกฟุตบอล พร้อมเข็มสูบและหัวต่อ ใช้งานง่าย พกพาสะดวก", sizes: ["Standard"] },
+            { id: 125, name: "Free Kick Wall Dummy (เหลือง)", brand: "อื่นๆ", category: "equipment", price: 1200, tag: "OFFICIAL", image: "images2/yellow-training-manikins.jpg", desc: "หุ่นจำลองกำแพงสำหรับฝึกยิงลูกฟรีคิก น้ำหนักเบา พับเก็บง่าย เหมาะกับการซ้อมทีม", sizes: ["Set of 3"] },
+            { id: 127, name: "Referee Whistle Kit", brand: "อื่นๆ", category: "equipment", price: 600, tag: "MATCH BALL", image: "images2/referee-set.jpg", desc: "ชุดนกหวีดผู้ตัดสิน เสียงดังชัดเจน มาพร้อมสายคล้องคอ ใช้งานสะดวกในสนามแข่งขัน", sizes: ["Standard"] },
+            { id: 130, name: "Elastic Bandage Wrap", brand: "อื่นๆ", category: "protection", price: 840, tag: "SUPPORT", image: "images2/elastic-bandage.jpg", desc: "ผ้าพันแผลยางยืดสำหรับพยุงข้อต่อ ใช้พันข้อเท้าหรือข้อมือที่บาดเจ็บให้กระชับ", sizes: ["S", "M", "L"] },
+            { id: 132, name: "Cold Spray First Aid (Perskindol)", brand: "อื่นๆ", category: "protection", price: 240, tag: "PROTECTION", image: "images2/magic-cool-spray.jpg", desc: "สเปรย์เย็นบรรเทาอาการปวดเมื่อยกล้ามเนื้อ ใช้ปฐมพยาบาลเบื้องต้นเมื่อบาดเจ็บระหว่างเล่นกีฬา", sizes: ["S", "M", "L"] },
+            { id: 133, name: "Adidas Knee Compression Sleeve", brand: "Adidas", category: "protection", price: 340, tag: "FIRST AID", image: "images/adidas-knee-sleeve.jpg", desc: "ปลอกรัดเข่าช่วยพยุงข้อเข่า ลดแรงกระแทกและอาการบาดเจ็บขณะวิ่งหรือกระโดด", sizes: ["S", "M", "L"] },
+            { id: 134, name: "Nike Knee Compression Sleeve", brand: "Nike", category: "protection", price: 490, tag: "SUPPORT", image: "images2/nike-knee-sleeve.jpg", desc: "ปลอกรัดเข่ากระชับ ช่วยพยุงข้อต่อและลดความเสี่ยงบาดเจ็บขณะเล่นกีฬา", sizes: ["S", "M", "L"] },
+            { id: 138, name: "Adidas Pro Shin Guard", brand: "Adidas", category: "protection", price: 340, tag: "FIRST AID", image: "images/adidas-shin-guards.jpg", desc: "สนับแข้งป้องกันการปะทะบริเวณหน้าแข้ง น้ำหนักเบา กระชับ ไม่เกะกะขณะวิ่ง", sizes: ["S", "M", "L"] },
+            { id: 139, name: "Knee & Leg Support Brace", brand: "อื่นๆ", category: "protection", price: 540, tag: "FIRST AID", image: "images2/knee-leg-brace.jpg", desc: "อุปกรณ์พยุงเข่าและขา ช่วยลดแรงกระแทกและรองรับข้อต่อระหว่างเล่นกีฬา", sizes: ["S", "M", "L"] },
+            { id: 141, name: "Grand Sport Captain Armband", brand: "Grand Sport", category: "training-gear", price: 300, tag: "DRILL", image: "images2/grand-sport-captain-armband.jpg", desc: "ปลอกแขนกัปตันทีม สวมใส่ง่าย ใช้แสดงสัญลักษณ์หัวหน้าทีมในสนามแข่งขัน", sizes: ["Free Size"] },
+            { id: 142, name: "Molten Pop-Up Mini Goal", brand: "Molten", category: "training-gear", price: 1250, tag: "COACH", image: "images2/molten-pop-up-mini-goal.jpg", desc: "ประตูฟุตบอลจำลองแบบพับเก็บได้ ตั้งได้รวดเร็ว เหมาะกับการฝึกซ้อมยิงประตูและเกมเล็ก", sizes: ["Pair (2 Goals)"] },
+            { id: 144, name: "Marker Discs Set", brand: "อื่นๆ", category: "training-gear", price: 1450, tag: "COACH", image: "images2/marker-discs-set.jpg", desc: "ชุดจานสีสำหรับทำเครื่องหมายสนามซ้อม ใช้วางแบ่งโซนฝึกความเร็วและการเลี้ยงบอล", sizes: ["Set of 10", "Set of 20", "Set of 50"] },
+            { id: 145, name: "Speed Agility Ladder", brand: "อื่นๆ", category: "training-gear", price: 650, tag: "SET", image: "images2/speed-agility-ladder.jpg", desc: "บันไดลิงฝึกความเร็วและความคล่องตัว ใช้ฝึกฟุตเวิร์กก่อนซ้อมหรือแข่งขัน", sizes: ["4m", "6m", "8m"] },
+            { id: 146, name: "Molten Resistance Parachute", brand: "Molten", category: "training-gear", price: 1300, tag: "POP-UP GOAL", image: "images2/molten-resistance-parachute.jpg", desc: "ร่มฝึกความเร็วแบบมีแรงต้าน ช่วยเสริมสร้างกำลังขาและความเร็วในการวิ่ง", sizes: ["Free Size"] },
+            { id: 147, name: "Mizuno Speed Agility Ladder", brand: "Mizuno", category: "training-gear", price: 300, tag: "DRILL", image: "images2/mizuno-speed-agility-ladder.jpg", desc: "บันไดลิงฝึกความคล่องตัว ใช้ฝึกจังหวะก้าวเท้าและความเร็วในการเคลื่อนที่", sizes: ["4m", "6m", "8m"] },
+            { id: 150, name: "Nike Backpack Sport 25L", brand: "Nike", category: "bags", price: 450, tag: "DUFFLE", image: "images2/nike-backpack.jpg", desc: "เป้สะพายหลังความจุ 25 ลิตร ช่องเก็บของเป็นสัดส่วน เหมาะพกไปซ้อมหรือเดินทาง", sizes: ["25L"] },
+            { id: 151, name: "Adidas Drawstring Gym Bag", brand: "Adidas", category: "bags", price: 1100, tag: "EVERYDAY", image: "images/adidas-drawstring-bag.jpg", desc: "ถุงหูรูดสำหรับใส่ชุดกีฬาและรองเท้า น้ำหนักเบา พกพาสะดวก", sizes: ["One Size"] },
+            { id: 152, name: "Nike Wheeled Kit Bag", brand: "Nike", category: "bags", price: 1650, tag: "PRO", image: "images2/nike-duffel-bag.jpg", desc: "กระเป๋าล้อลากขนาดใหญ่ เหมาะสำหรับทีมขนอุปกรณ์และชุดแข่งไปแข่งขันนอกสถานที่", sizes: ["70L"] },
+            { id: 153, name: "Adidas Shoe Bag Pro", brand: "Adidas", category: "bags", price: 900, tag: "TRAVEL", image: "images/adidas-boot-bag.jpg", desc: "ถุงใส่รองเท้าฟุตบอลแยกสัดส่วน ป้องกันกลิ่นและสิ่งสกปรกปนกับของอื่นในกระเป๋า", sizes: ["One Size"] },
+            { id: 154, name: "Ari Shoe Bag Pro", brand: "Ari", category: "bags", price: 1400, tag: "TRAVEL", image: "images/ari-shoe-bag.jpg", desc: "ถุงใส่รองเท้าฟุตบอลทรงกะทัดรัด พกพาง่าย แยกเก็บรองเท้าจากของใช้อื่น", sizes: ["One Size"] },
+            { id: 155, name: "Adidas Backpack Sport 25L", brand: "Adidas", category: "bags", price: 850, tag: "EVERYDAY", image: "images/adidas-camo-backpack.jpg", desc: "เป้สะพายหลังกีฬาความจุ 25 ลิตร ช่องเก็บของหลากหลาย ทนทานต่อการใช้งานหนัก", sizes: ["25L"] },
+            { id: 156, name: "Under Armour Team Duffle Bag", brand: "Under Armour", category: "bags", price: 1850, tag: "PRO", image: "images2/under-armour-small-duffel.jpg", desc: "กระเป๋าสะพายทรงยาวสำหรับใส่ชุดแข่งและอุปกรณ์ทีม จุของได้เยอะ ทนทาน", sizes: ["60L"] },
+            { id: 157, name: "Adidas Sling Bag Compact", brand: "Adidas", category: "bags", price: 1450, tag: "DUFFLE", image: "images/adidas-sling-bag.jpg", desc: "กระเป๋าสะพายไหล่ทรงกะทัดรัด เหมาะพกของใช้จำเป็นไปซ้อมหรือแข่งขัน", sizes: ["One Size"] },
+            { id: 158, name: "Ari Drawstring Gym Bag", brand: "Ari", category: "bags", price: 950, tag: "TRAVEL", image: "images/ari-drawstring-bags-multi.jpg", desc: "ถุงหูรูดใส่ชุดกีฬา น้ำหนักเบา พับเก็บง่าย พกพาสะดวกทุกโอกาส", sizes: ["One Size"], colors: ["แดง", "เขียวมิ้นท์", "ชมพู"] },
+            { id: 159, name: "Ari Backpack Sport 25L", brand: "Ari", category: "bags", price: 1450, tag: "TRAVEL", image: "images/ari-graphic-backpack.jpg", desc: "เป้สะพายหลังความจุ 25 ลิตร ดีไซน์ลายกราฟฟิก ช่องเก็บของเป็นสัดส่วน", sizes: ["25L"] },
+            { id: 160, name: "Under Armour Gradient Shoelaces", brand: "Under Armour", category: "accessories", price: 300, tag: "DRY", image: "images2/under-armour-elastic-band.jpg", desc: "เชือกผูกรองเท้าไล่โทนสี ใช้เปลี่ยนเพื่อเพิ่มสไตล์ให้รองเท้าฟุตบอลคู่โปรด", sizes: ["One Size"] },
+            { id: 161, name: "Nike Performance Headband", brand: "Nike", category: "accessories", price: 200, tag: "STYLE", image: "images2/nike-headband.jpg", desc: "ผ้าคาดผมกีฬา ช่วยซับเหงื่อไม่ให้ไหลเข้าตาขณะเล่น ใส่สบายกระชับศีรษะ", sizes: ["Free Size"] },
+            { id: 162, name: "Adidas Wristband Set", brand: "Adidas", category: "accessories", price: 650, tag: "ACC", image: "images/adidas-wristbands.jpg", desc: "สายรัดข้อมือกีฬา ใช้ซับเหงื่อบริเวณข้อมือขณะเล่นหรือซ้อม", sizes: ["Free Size"] },
+            { id: 163, name: "Ari Water Bottle 750ml", brand: "Ari", category: "accessories", price: 450, tag: "DRY", image: "images/ari-water-bottle.jpg", desc: "ขวดน้ำสำหรับนักกีฬา ความจุ 750 มล. พกพาสะดวก ใช้เติมน้ำระหว่างซ้อมหรือแข่งขัน", sizes: ["750 ml"] },
+            { id: 164, name: "Ari Heritage Cap (New)", brand: "Ari", category: "accessories", price: 700, tag: "ACC", image: "images/ari-running-cap.jpg", desc: "หมวกแก๊ปสไตล์กีฬา สวมกันแดดขณะซ้อมหรือใส่เดินทางได้ทุกวัน", sizes: ["Adjustable"] },
+            { id: 165, name: "Ari Wristband Set", brand: "Ari", category: "accessories", price: 650, tag: "STYLE", image: "images/ari-wristband.jpg", desc: "สายรัดข้อมือกีฬาผ้านุ่ม ซับเหงื่อได้ดี ใส่คู่ระหว่างซ้อมและแข่งขัน", sizes: ["Free Size"] },
+            { id: 167, name: "Adidas Performance Headband", brand: "Adidas", category: "accessories", price: 350, tag: "CARE", image: "images/adidas-headband.jpg", desc: "ผ้าคาดผมกีฬา ช่วยซับเหงื่อและกันผมปรกหน้าขณะเล่นหรือฝึกซ้อม", sizes: ["Free Size"] },
+            { id: 168, name: "Adidas Water Bottle 750ml", brand: "Adidas", category: "accessories", price: 400, tag: "DRY", image: "images/adidas-water-bottle.jpg", desc: "ขวดน้ำสำหรับนักกีฬา ความจุ 750 มล. ดีไซน์ทนทาน พกพาง่ายเวลาไปซ้อมหรือแข่งขัน", sizes: ["750 ml"] },
+        ];
+
+        // รูปสำรองแบบฝังในไฟล์ (ใช้ได้แม้ไม่มีอินเทอร์เน็ต)
+        const NO_IMAGE_SVG = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">' +
+            '<rect width="300" height="200" fill="#f1f5f9"/>' +
+            '<text x="150" y="105" font-family="sans-serif" font-size="15" fill="#94a3b8" text-anchor="middle">ไม่มีรูปสินค้า</text>' +
+            '</svg>'
+        );
+
+        let cart = [];
+        let currentFilterCategory = "all";
+        let currentFilterBrand = "all";
+        let searchQuery = "";
+        let selectedProductForModal = null;
+        let selectedSizeForModal = "";
+        let selectedColorForModal = "";
+        let pendingCheckoutRedirect = false;
+
+        // ---------- In-memory "database" (persists via window.storage when running as an artifact) ----------
+        let users = [];          // { id, name, phone, email, password }
+        let orders = [];         // { id, userId, items, total, payAmount, paymentType, name, phone, pickupTime, createdAt }
+        let currentUser = null;  // logged-in user object (without password)
+
+        // เก็บข้อมูลผ่าน window.storage ถ้ามี ถ้าไม่มีจะถอยไปใช้ localStorage ของเบราว์เซอร์
+        // ทำให้เปิดไฟล์บนเครื่องตัวเองแล้วข้อมูลสมาชิก/ประวัติการจองยังอยู่หลังรีเฟรช
+        async function storageGet(key, fallback) {
+            try {
+                if (window.storage) {
+                    const res = await window.storage.get(key, false);
+                    if (res) return JSON.parse(res.value);
+                }
+            } catch (e) { /* ไม่มีคีย์นี้ หรือ storage ใช้ไม่ได้ */ }
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw !== null) return JSON.parse(raw);
+            } catch (e) { /* localStorage ถูกปิดอยู่ */ }
+            return fallback;
+        }
+        async function storageSet(key, value) {
+            let ok = false;
+            try {
+                if (window.storage) { await window.storage.set(key, JSON.stringify(value), false); ok = true; }
+            } catch (e) { /* ลองวิธีถัดไป */ }
+            try {
+                localStorage.setItem(key, JSON.stringify(value)); ok = true;
+            } catch (e) { /* localStorage ถูกปิดอยู่ */ }
+            return ok;
+        }
+
+        // ================= TOAST (แจ้งเตือนแบบไม่รบกวน) =================
+        function showToast(message, type = 'info') {
+            const box = document.getElementById('toast-box');
+            if (!box) return;
+            const colors = {
+                success: 'bg-emerald-600',
+                error: 'bg-red-600',
+                info: 'bg-slate-800'
+            };
+            const el = document.createElement('div');
+            el.className = `${colors[type] || colors.info} text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg opacity-0 translate-y-2 transition-all duration-300`;
+            el.innerText = message;
+            box.appendChild(el);
+            requestAnimationFrame(() => { el.classList.remove('opacity-0', 'translate-y-2'); });
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => el.remove(), 320);
+            }, 2600);
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                users = await storageGet('kickoff-users', []);
+                orders = await storageGet('kickoff-orders', []);
+                const savedUserId = await storageGet('kickoff-current-user-id', null);
+                if (savedUserId) {
+                    const found = users.find(u => u.id === savedUserId);
+                    if (found) currentUser = { id: found.id, name: found.name, phone: found.phone, email: found.email };
+                }
+            } catch (e) {
+                console.error('โหลดข้อมูลไม่สำเร็จ:', e);
+                users = Array.isArray(users) ? users : [];
+                orders = Array.isArray(orders) ? orders : [];
+            }
+            renderShopProducts();
+            updateCartUI();
+            renderAuthUI();
+            initHeroBanner();
+        });
+
+        // ปิด modal ด้วยปุ่ม Esc และคลิกพื้นหลัง
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                ['product-detail-modal', 'cart-modal', 'qr-payment-modal'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && !el.classList.contains('hidden')) el.classList.add('hidden');
+                });
+            }
+        });
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(pageId);
+            if (target) target.classList.remove('hidden');
+            if (pageId === 'profile-page') renderProfilePage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ================= AUTH (membership / login) =================
+        function renderAuthUI() {
+            const guest = document.getElementById('auth-guest-controls');
+            const userBox = document.getElementById('auth-user-controls');
+            if (currentUser) {
+                guest.classList.add('hidden');
+                userBox.classList.remove('hidden');
+                userBox.classList.add('flex');
+                document.getElementById('user-nav-name').innerText = currentUser.name;
+                document.getElementById('user-avatar-initial').innerText = currentUser.name.charAt(0).toUpperCase();
+            } else {
+                guest.classList.remove('hidden');
+                userBox.classList.add('hidden');
+                userBox.classList.remove('flex');
+            }
+        }
+
+        async function handleRegisterSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const password = document.getElementById('reg-password').value;
+            const errorEl = document.getElementById('register-error');
+            const fail = (msg) => { errorEl.innerText = msg; errorEl.classList.remove('hidden'); };
+
+            // ---------- ตรวจสอบความถูกต้องของข้อมูล ----------
+            if (name.length < 2) return fail("กรุณากรอกชื่อ-นามสกุลให้ครบถ้วน");
+            if (!/^0\d{9}$/.test(phone)) return fail("เบอร์โทรศัพท์ไม่ถูกต้อง ต้องขึ้นต้นด้วย 0 และมี 10 หลัก");
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("รูปแบบอีเมลไม่ถูกต้อง");
+            if (password.length < 4) return fail("รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร");
+            if (users.some(u => u.email === email)) return fail("อีเมลนี้ถูกใช้สมัครสมาชิกแล้ว");
+            if (users.some(u => u.phone === phone)) return fail("เบอร์โทรศัพท์นี้ถูกใช้สมัครสมาชิกแล้ว");
+
+            try {
+                const newUser = { id: 'u' + Date.now(), name, phone, email, password, createdAt: Date.now() };
+                users.push(newUser);
+                await storageSet('kickoff-users', users);
+
+                currentUser = { id: newUser.id, name: newUser.name, phone: newUser.phone, email: newUser.email };
+                await storageSet('kickoff-current-user-id', currentUser.id);
+
+                renderAuthUI();
+                event.target.reset();
+                errorEl.classList.add('hidden');
+                showToast(`ยินดีต้อนรับ ${newUser.name}!`, 'success');
+
+                if (pendingCheckoutRedirect) {
+                    pendingCheckoutRedirect = false;
+                    openCartModal();
+                    goToCheckout();
+                } else {
+                    showPage('shop-page');
+                }
+            } catch (err) {
+                console.error('Register error:', err);
+                fail("เกิดข้อผิดพลาดในการสมัครสมาชิก กรุณาลองใหม่อีกครั้ง");
+            }
+        }
+
+        async function handleLoginSubmit(event) {
+            event.preventDefault();
+            const identifier = document.getElementById('login-identifier').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+
+            const found = users.find(u => (u.email === identifier || u.phone === identifier) && u.password === password);
+            if (!found) {
+                errorEl.innerText = "ไม่พบบัญชีผู้ใช้ หรือรหัสผ่านไม่ถูกต้อง";
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            currentUser = { id: found.id, name: found.name, phone: found.phone, email: found.email };
+            await storageSet('kickoff-current-user-id', currentUser.id);
+
+            renderAuthUI();
+            event.target.reset();
+            errorEl.classList.add('hidden');
+            showToast(`เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${found.name}`, 'success');
+
+            if (pendingCheckoutRedirect) {
+                pendingCheckoutRedirect = false;
+                openCartModal();
+                goToCheckout();
+            } else {
+                showPage('shop-page');
+            }
+        }
+
+        async function logoutUser() {
+            currentUser = null;
+            await storageSet('kickoff-current-user-id', null);
+            renderAuthUI();
+            showPage('shop-page');
+            showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
+        }
+
+        function requireLogin(afterLoginGoToCheckout) {
+            if (currentUser) return true;
+            pendingCheckoutRedirect = !!afterLoginGoToCheckout;
+            closeModal('cart-modal');
+            closeModal('product-detail-modal');
+            showPage('login-page');
+            showToast('กรุณาเข้าสู่ระบบก่อนทำรายการจอง', 'info');
+            return false;
+        }
+
+        function renderProfilePage() {
+            if (!currentUser) { showPage('login-page'); return; }
+            document.getElementById('profile-avatar').innerText = currentUser.name.charAt(0).toUpperCase();
+            document.getElementById('profile-name').innerText = currentUser.name;
+            document.getElementById('profile-contact').innerText = `${currentUser.phone} • ${currentUser.email}`;
+
+            const myOrders = orders.filter(o => o.userId === currentUser.id).sort((a, b) => b.createdAt - a.createdAt);
+            const list = document.getElementById('order-history-list');
+            if (myOrders.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-400 text-xs py-8">ยังไม่มีประวัติการสั่งซื้อ</div>`;
+                return;
+            }
+            list.innerHTML = myOrders.map(o => `
+                <div class="border rounded-2xl p-4 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-500">เลขที่ออเดอร์ ${o.id}</span>
+                        <div class="flex gap-1">
+                            <span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">${o.paymentType === 'full' ? 'ชำระเต็มจำนวน' : 'มัดจำ 50%'}</span>
+                            <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">${o.status || 'รอชำระมัดจำ'}</span>
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-gray-500">วันที่จอง: ${new Date(o.createdAt).toLocaleString('th-TH')}</div>
+                    <div class="text-[11px] text-emerald-700 font-bold">🏪 นัดรับสินค้า: ${o.pickupTime ? new Date(o.pickupTime).toLocaleString('th-TH') : '-'}</div>
+                    <div class="space-y-1">
+                        ${o.items.map(it => `<div class="flex justify-between text-xs"><span>${it.name} (${it.size}${it.color ? `, ${it.color}` : ''}) x${it.qty}</span><span>฿${(it.price * it.qty).toLocaleString()}</span></div>`).join('')}
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-2 text-sm font-bold">
+                        <span>ยอดชำระ</span><span class="text-amber-600">฿${o.payAmount.toLocaleString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ================= HERO BANNER (auto-slide) =================
+        const heroSlidesData = [
+            { title: "จองออนไลน์ รับที่หน้าร้าน", sub: "จองล่วงหน้า ลองสวมใส่จริงก่อนรับสินค้า ไม่ต้องรอนาน", emoji: "🏪" },
+            { title: "เสื้อแข่งทีมโปรดของคุณ", sub: "สโมสรดังทั่วยุโรปและไทยลีก จองไว้ก่อน มารับที่ร้าน", emoji: "🏆" },
+            { title: "มัดจำเพียง 50% ผ่าน QR Code", sub: "ล็อกสินค้าไว้ให้แน่นอน จ่ายส่วนที่เหลือวันรับสินค้า", emoji: "📱" },
+            { title: "สมัครสมาชิกวันนี้", sub: "รับสิทธิ์สั่งจองล่วงหน้าและดูประวัติการจองย้อนหลัง", emoji: "🎽" },
+            { title: "อุปกรณ์ซ้อมครบวงจร", sub: "กรวย บันไดลิง ประตูป็อบอัพ พร้อมลุยสนาม", emoji: "🥅" }
+        ];
+        let heroIndex = 0;
+        let heroTimer = null;
+
+        function initHeroBanner() {
+            const track = document.getElementById('hero-slides');
+            const dotsBox = document.getElementById('hero-dots');
+            track.innerHTML = heroSlidesData.map((s, i) => `
+                <div class="hero-slide absolute inset-0 flex flex-col items-center justify-center text-center px-6" style="opacity:${i === 0 ? 1 : 0}">
+                    <div class="text-3xl mb-1">${s.emoji}</div>
+                    <h2 class="text-white text-lg sm:text-2xl font-extrabold">${s.title}</h2>
+                    <p class="text-amber-300 text-xs sm:text-sm mt-1">${s.sub}</p>
+                </div>
+            `).join('');
+            dotsBox.innerHTML = heroSlidesData.map((_, i) => `<span class="hero-dot w-2 h-2 rounded-full bg-white/50 transition-all duration-300 ${i === 0 ? 'active' : ''}" onclick="heroGoTo(${i})"></span>`).join('');
+            heroTimer = setInterval(heroNext, 4000);
+        }
+
+        function renderHeroSlide() {
+            document.querySelectorAll('#hero-slides .hero-slide').forEach((el, i) => {
+                el.style.opacity = i === heroIndex ? 1 : 0;
+            });
+            document.querySelectorAll('#hero-dots .hero-dot').forEach((el, i) => {
+                el.classList.toggle('active', i === heroIndex);
+            });
+        }
+        function heroNext() { heroIndex = (heroIndex + 1) % heroSlidesData.length; renderHeroSlide(); }
+        function heroPrev() { heroIndex = (heroIndex - 1 + heroSlidesData.length) % heroSlidesData.length; renderHeroSlide(); }
+        function heroGoTo(i) { heroIndex = i; renderHeroSlide(); clearInterval(heroTimer); heroTimer = setInterval(heroNext, 4000); }
+
+        // ================= FILTERS / SEARCH =================
+        function filterCategory(cat) {
+            currentFilterCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                const active = btn.dataset.cat === cat;
+                btn.classList.toggle('bg-black', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('border-black', active);
+                btn.classList.toggle('bg-white', !active);
+                btn.classList.toggle('text-gray-700', !active);
+            });
+            renderShopProducts();
+        }
+        let searchDebounceTimer = null;
+        function handleSearch() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                searchQuery = document.getElementById('search-input').value.trim();
+                renderShopProducts();
+            }, 200);
+        }
+        function handleBrandChange() {
+            currentFilterBrand = document.getElementById('brand-select').value;
+            renderShopProducts();
+        }
+
+        // ================= CART =================
+        function quickAddToCart(productId) {
+            if (!requireLogin(false)) return;
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+
+            const defaultSize = prod.sizes && prod.sizes.length > 0 ? prod.sizes[0] : "Standard";
+            const defaultColor = prod.colors && prod.colors.length > 0 ? prod.colors[0] : "";
+            const existingIndex = cart.findIndex(item => item.id === prod.id && item.size === defaultSize && item.color === defaultColor);
+
+            if (existingIndex > -1) {
+                cart[existingIndex].qty += 1;
+            } else {
+                cart.push({ id: prod.id, name: prod.name, price: prod.price, image: prod.image, size: defaultSize, color: defaultColor, qty: 1 });
+            }
+
+            updateCartUI();
+            showToast(`เพิ่ม "${prod.name}" ลงตะกร้าแล้ว`, 'success');
+            openCartModal();
+        }
+
+        // แปลชื่อหมวดหมู่และป้ายสินค้าเป็นภาษาไทยสำหรับหน้ารายละเอียดสินค้า
+        const CATEGORY_LABELS = {
+            shoes: "รองเท้าฟุตบอล", "club-apparel": "เสื้อแข่งสโมสร", tshirt: "เสื้อยืดเล่นกีฬา",
+            shorts: "กางเกงกีฬา", jackets: "แจ็คเก็ต & วอร์ม", socks: "ถุงเท้ากีฬา",
+            equipment: "ลูกฟุตบอล & อุปกรณ์", protection: "อุปกรณ์เซฟตี้", "training-gear": "อุปกรณ์ซ้อม & โค้ช",
+            bags: "กระเป๋า", accessories: "หมวก & แอคเซสเซอรี่"
+        };
+        const TAG_LABELS = {
+            HOT: "ขายดี", NEW: "มาใหม่", POPULAR: "ยอดนิยม", "BEST VALUE": "คุ้มค่าที่สุด",
+            PRO: "ระดับโปร", BEST: "แนะนำ", "BEST SELLER": "ขายดีที่สุด", LIMITED: "ลิมิเต็ด",
+            CLASSIC: "รุ่นคลาสสิก", "DRY-FIT": "ผ้าดรายฟิต", DRY: "ผ้าแห้งไว", FIT: "ทรงกระชับ",
+            CHEAP: "ราคาประหยัด", THAI: "แบรนด์ไทย", THAILAND: "ทีมชาติไทย", "ARI GEAR": "Ari Gear",
+            "ARI / THAI LEAGUE": "Ari / ไทยลีก", SET: "แพ็คเซ็ต", "PACK 3": "แพ็ค 3 คู่",
+            VALUABLE: "คุ้มราคา", SAFETY: "อุปกรณ์เซฟตี้", SUPPORT: "พยุง/ซัพพอร์ต", "FIRST AID": "ปฐมพยาบาล",
+            "MUST HAVE": "ต้องมีติดกระเป๋า", "GK GLOVES": "ถุงมือผู้รักษาประตู", "MATCH BALL": "ลูกแข่งขัน",
+            FUTSAL: "ฟุตซอล", UCL: "แชมเปียนส์ลีก", OFFICIAL: "ของแท้ทางการ", DRILL: "อุปกรณ์ฝึกซ้อม",
+            "POP-UP GOAL": "ประตูป็อบอัพ", CAPTAIN: "กัปตันทีม", COACH: "อุปกรณ์โค้ช", DUFFLE: "กระเป๋าดัฟเฟิล",
+            EVERYDAY: "ใช้ได้ทุกวัน", ACC: "แอคเซสเซอรี่", CARE: "ดูแลรักษา", CLEANER: "น้ำยาทำความสะอาด",
+            STYLE: "แฟชั่น", "UCL": "แชมเปียนส์ลีก"
+        };
+        function translateTag(tag) { return TAG_LABELS[tag] || tag; }
+        function translateCategory(cat) { return CATEGORY_LABELS[cat] || cat; }
+
+        // ปรับราคาตามไซส์เสื้อผ้า (S/M/L/XL/2XL) เท่านั้น ไม่ยุ่งกับไซส์รองเท้าหรือไซส์แบบอื่น
+        const CLOTHING_SIZE_TOKENS = new Set(['S', 'M', 'L', 'XL', '2XL', '3XL']);
+        function isClothingSizeArray(sizes) {
+            return !!sizes && sizes.length > 0 && sizes.every(s => CLOTHING_SIZE_TOKENS.has(s));
+        }
+        // ปรับราคาตามจำนวนชิ้นในเซ็ต เช่น "Set of 10" / "Set of 20" / "Set of 50"
+        function parseSetQty(s) {
+            const m = /^Set of (\d+)$/i.exec(s || '');
+            return m ? parseInt(m[1], 10) : null;
+        }
+        function isQuantitySetArray(sizes) {
+            return !!sizes && sizes.length > 0 && sizes.every(s => parseSetQty(s) !== null);
+        }
+        // ปรับราคาตามความยาว เช่น บันไดลิงฝึกความเร็ว "4m" / "6m" / "8m"
+        function parseMeters(s) {
+            const m = /^(\d+(?:\.\d+)?)\s*m$/i.exec((s || '').trim());
+            return m ? parseFloat(m[1]) : null;
+        }
+        function isMeterLengthArray(sizes) {
+            return !!sizes && sizes.length > 1 && sizes.every(s => parseMeters(s) !== null);
+        }
+        // ปรับราคาตามไซส์ถุงเท้า เช่น "Free Size" / "M (38-42)" / "L (42-46)"
+        const SOCK_SIZE_TOKENS = new Set(['Free Size', 'M (38-42)', 'L (42-46)']);
+        function isSockSizeArray(sizes) {
+            return !!sizes && sizes.length > 1 && sizes.every(s => SOCK_SIZE_TOKENS.has(s));
+        }
+        function getPriceForSize(product, size) {
+            if (!product) return 0;
+            if (isClothingSizeArray(product.sizes)) {
+                const idx = product.sizes.indexOf(size);
+                if (idx <= 0) return product.price;
+                return Math.round(product.price * (1 + 0.05 * idx) / 10) * 10;
+            }
+            if (isQuantitySetArray(product.sizes)) {
+                const baseQty = parseSetQty(product.sizes[0]);
+                const qty = parseSetQty(size);
+                if (!baseQty || !qty || qty === baseQty) return product.price;
+                const ratio = Math.pow(qty / baseQty, 0.5); // ยิ่งซื้อเยอะยิ่งคุ้มต่อชิ้นมากขึ้น
+                return Math.round(product.price * ratio / 10) * 10;
+            }
+            if (isMeterLengthArray(product.sizes)) {
+                const baseLen = parseMeters(product.sizes[0]);
+                const len = parseMeters(size);
+                if (!baseLen || !len || len === baseLen) return product.price;
+                const ratio = Math.sqrt(len / baseLen); // ยิ่งยาวยิ่งแพงขึ้น แต่ไม่แพงเป็นสัดส่วนตรงๆ
+                return Math.round(product.price * ratio / 10) * 10;
+            }
+            if (isSockSizeArray(product.sizes)) {
+                const idx = product.sizes.indexOf(size);
+                if (idx <= 0) return product.price;
+                return Math.round(product.price * (1 + 0.03 * idx) / 10) * 10; // ไซส์ใหญ่ขึ้นราคาขยับขึ้นเล็กน้อย
+            }
+            return product.price;
+        }
+
+        function openProductDetailModal(productId) {
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+            selectedProductForModal = prod;
+            selectedSizeForModal = prod.sizes && prod.sizes.length > 0 ? prod.sizes[0] : "Standard";
+            selectedColorForModal = prod.colors && prod.colors.length > 0 ? prod.colors[0] : "";
+
+            document.getElementById('modal-img').src = prod.image;
+            document.getElementById('modal-category').innerText = translateCategory(prod.category);
+            document.getElementById('modal-brand-badge').innerText = prod.brand;
+            document.getElementById('modal-title').innerText = prod.name;
+            document.getElementById('modal-price').innerText = `฿${getPriceForSize(prod, selectedSizeForModal).toLocaleString()}`;
+            document.getElementById('modal-desc').innerText = prod.desc;
+            const tagBadge = document.getElementById('modal-tag-badge');
+            if (prod.tag) { tagBadge.innerText = translateTag(prod.tag); tagBadge.classList.remove('hidden'); }
+            else { tagBadge.classList.add('hidden'); }
+
+            const sizesBox = document.getElementById('modal-sizes');
+            sizesBox.innerHTML = (prod.sizes || []).map(sz => `
+                <button onclick="selectModalSize('${sz.replace(/'/g, "\\'")}')" data-size="${sz}"
+                    class="modal-size-btn px-3 py-1.5 text-xs font-bold rounded-lg border ${sz === selectedSizeForModal ? 'bg-black text-white border-black' : 'bg-white text-gray-700'}">
+                    ${sz}
+                </button>
+            `).join('');
+
+            const colorsWrap = document.getElementById('modal-colors-wrap');
+            const colorsBox = document.getElementById('modal-colors');
+            if (prod.colors && prod.colors.length > 0) {
+                colorsWrap.classList.remove('hidden');
+                colorsBox.innerHTML = prod.colors.map(c => `
+                    <button onclick="selectModalColor('${c.replace(/'/g, "\\'")}')" data-color="${c}"
+                        class="modal-color-btn px-3 py-1.5 text-xs font-bold rounded-lg border ${c === selectedColorForModal ? 'bg-black text-white border-black' : 'bg-white text-gray-700'}">
+                        ${c}
+                    </button>
+                `).join('');
+            } else {
+                colorsWrap.classList.add('hidden');
+                colorsBox.innerHTML = '';
+            }
+
+            document.getElementById('product-detail-modal').classList.remove('hidden');
+        }
+        function selectModalSize(size) {
+            selectedSizeForModal = size;
+            document.querySelectorAll('.modal-size-btn').forEach(btn => {
+                const active = btn.dataset.size === size;
+                btn.classList.toggle('bg-black', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('border-black', active);
+                btn.classList.toggle('bg-white', !active);
+                btn.classList.toggle('text-gray-700', !active);
+            });
+            if (selectedProductForModal) {
+                document.getElementById('modal-price').innerText = `฿${getPriceForSize(selectedProductForModal, size).toLocaleString()}`;
+            }
+        }
+        function selectModalColor(color) {
+            selectedColorForModal = color;
+            document.querySelectorAll('.modal-color-btn').forEach(btn => {
+                const active = btn.dataset.color === color;
+                btn.classList.toggle('bg-black', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('border-black', active);
+                btn.classList.toggle('bg-white', !active);
+                btn.classList.toggle('text-gray-700', !active);
+            });
+        }
+        function addToCartFromModal() {
+            if (!requireLogin(false)) return;
+            if (!selectedProductForModal) return;
+            const prod = selectedProductForModal;
+            const size = selectedSizeForModal;
+            const color = selectedColorForModal;
+            const price = getPriceForSize(prod, size);
+            const existingIndex = cart.findIndex(item => item.id === prod.id && item.size === size && item.color === color);
+            if (existingIndex > -1) {
+                cart[existingIndex].qty += 1;
+            } else {
+                cart.push({ id: prod.id, name: prod.name, price, image: prod.image, size, color, qty: 1 });
+            }
+            updateCartUI();
+            showToast(`เพิ่ม "${prod.name}" (${size}${color ? ', ' + color : ''}) ลงตะกร้าแล้ว`, 'success');
+            closeModal('product-detail-modal');
+            openCartModal();
+        }
+
+        function changeCartQty(index, delta) {
+            cart[index].qty += delta;
+            if (cart[index].qty <= 0) cart.splice(index, 1);
+            updateCartUI();
+        }
+        function removeCartItem(index) {
+            const removed = cart[index];
+            cart.splice(index, 1);
+            updateCartUI();
+            if (removed) showToast(`นำ "${removed.name}" ออกจากตะกร้าแล้ว`, 'info');
+        }
+
+        function updateCartUI() {
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('cart-count').innerText = totalQty;
+
+            const itemsBox = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                itemsBox.innerHTML = `<div class="text-center text-gray-400 text-xs py-10">ตะกร้าว่างเปล่า เลือกสินค้าที่ต้องการก่อนนะ</div>`;
+            } else {
+                itemsBox.innerHTML = cart.map((item, i) => `
+                    <div class="flex gap-3 items-center border-b pb-3">
+                        <img src="${item.image}" onerror="this.onerror=null;this.src=NO_IMAGE_SVG" class="w-14 h-14 object-contain bg-gray-50 rounded-lg p-1">
+                        <div class="flex-grow">
+                            <p class="text-xs font-bold line-clamp-1">${item.name}</p>
+                            <p class="text-[10px] text-gray-400">ไซส์: ${item.size}${item.color ? ` • สี: ${item.color}` : ''}</p>
+                            <p class="text-xs font-black text-amber-600">฿${item.price.toLocaleString()}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeCartQty(${i}, -1)" class="w-6 h-6 rounded-full bg-gray-100 text-xs font-bold hover:bg-gray-200">−</button>
+                            <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+                            <button onclick="changeCartQty(${i}, 1)" class="w-6 h-6 rounded-full bg-gray-100 text-xs font-bold hover:bg-gray-200">+</button>
+                        </div>
+                        <button onclick="removeCartItem(${i})" class="text-gray-300 hover:text-red-400 text-xs ml-1">✕</button>
+                    </div>
+                `).join('');
+            }
+
+            const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+            document.getElementById('cart-total-display').innerText = `฿${total.toLocaleString()}`;
+            document.getElementById('checkout-btn').disabled = cart.length === 0;
+            updatePayAmountDisplay();
+        }
+
+        function openCartModal() {
+            document.getElementById('cart-modal').classList.remove('hidden');
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
+        // ปิด modal เมื่อคลิกพื้นหลังสีดำด้านนอกกล่อง
+        function closeOnBackdrop(event, id) {
+            if (event.target === event.currentTarget) closeModal(id);
+        }
+        function backToCart() {
+            document.getElementById('checkout-view').classList.add('hidden');
+            document.getElementById('cart-view').classList.remove('hidden');
+        }
+        function goToCheckout() {
+            if (cart.length === 0) { showToast('ตะกร้าว่างเปล่า กรุณาเลือกสินค้าก่อน', 'error'); return; }
+            if (!requireLogin(true)) return;
+            document.getElementById('cart-view').classList.add('hidden');
+            document.getElementById('checkout-view').classList.remove('hidden');
+            hideCheckoutError();
+            if (currentUser) {
+                document.getElementById('order-name').value = currentUser.name;
+                document.getElementById('order-phone').value = currentUser.phone;
+            }
+            // กำหนดเวลานัดรับขั้นต่ำ = อีก 1 ชั่วโมงข้างหน้า และค่าเริ่มต้นให้ผู้ใช้
+            const pickupInput = document.getElementById('pickup-time');
+            const min = new Date(Date.now() + 60 * 60 * 1000);
+            pickupInput.min = toLocalDatetimeValue(min);
+            if (!pickupInput.value) pickupInput.value = toLocalDatetimeValue(nextOpenSlot(min));
+            updatePayAmountDisplay();
+        }
+
+        function toLocalDatetimeValue(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+        // ปรับเวลาให้ตกอยู่ในช่วงเปิดทำการ 09:00-20:00
+        function nextOpenSlot(d) {
+            const r = new Date(d);
+            if (r.getHours() < 9) r.setHours(9, 0, 0, 0);
+            else if (r.getHours() >= 20) { r.setDate(r.getDate() + 1); r.setHours(9, 0, 0, 0); }
+            return r;
+        }
+
+        function showCheckoutError(msg) {
+            const el = document.getElementById('checkout-error');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
+        function hideCheckoutError() {
+            document.getElementById('checkout-error').classList.add('hidden');
+        }
+
+        function updatePayAmountDisplay() {
+            const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+            const paymentType = document.querySelector('input[name="payment-type"]:checked');
+            const isFull = paymentType && paymentType.value === 'full';
+            const payAmount = isFull ? total : Math.round(total / 2);
+            const remaining = total - payAmount;
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = `฿${val.toLocaleString()}`; };
+            set('pay-amount-display', payAmount);
+            set('checkout-total-display', total);
+            set('remaining-display', remaining);
+        }
+
+        let isSubmittingOrder = false;
+        async function handleCheckoutSubmit(event) {
+            event.preventDefault();
+            if (isSubmittingOrder) return;              // กันกดซ้ำซ้อน
+            if (!requireLogin(true)) return;
+            hideCheckoutError();
+
+            const name = document.getElementById('order-name').value.trim();
+            const phone = document.getElementById('order-phone').value.trim();
+            const pickupTime = document.getElementById('pickup-time').value;
+
+            // ---------- ตรวจสอบความถูกต้องของข้อมูล ----------
+            if (cart.length === 0) { showCheckoutError('ตะกร้าว่างเปล่า ไม่สามารถทำรายการจองได้'); return; }
+            if (name.length < 2) { showCheckoutError('กรุณากรอกชื่อ-นามสกุลให้ครบถ้วน'); return; }
+            if (!/^0\d{9}$/.test(phone)) { showCheckoutError('เบอร์โทรศัพท์ไม่ถูกต้อง ต้องขึ้นต้นด้วย 0 และมี 10 หลัก'); return; }
+            if (!pickupTime) { showCheckoutError('กรุณาเลือกวัน-เวลาที่จะมารับสินค้า'); return; }
+
+            const pickupDate = new Date(pickupTime);
+            if (isNaN(pickupDate.getTime())) { showCheckoutError('รูปแบบวัน-เวลาไม่ถูกต้อง'); return; }
+            if (pickupDate.getTime() < Date.now() + 59 * 60 * 1000) {
+                showCheckoutError('กรุณาเลือกเวลานัดรับล่วงหน้าอย่างน้อย 1 ชั่วโมง'); return;
+            }
+            const h = pickupDate.getHours();
+            if (h < 9 || h >= 20) { showCheckoutError('ร้านเปิดทำการ 09:00 - 20:00 น. กรุณาเลือกเวลาใหม่'); return; }
+
+            const paymentTypeEl = document.querySelector('input[name="payment-type"]:checked');
+            const paymentType = paymentTypeEl ? paymentTypeEl.value : 'deposit';
+            const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+            const payAmount = paymentType === 'full' ? total : Math.round(total / 2);
+
+            const btn = document.getElementById('confirm-order-btn');
+            isSubmittingOrder = true;
+            if (btn) { btn.disabled = true; btn.innerText = 'กำลังบันทึกการจอง...'; }
+
+            try {
+                const order = {
+                    id: 'KO' + Date.now().toString().slice(-8),
+                    userId: currentUser.id,
+                    items: cart.map(i => ({ ...i })),
+                    total, payAmount, paymentType, name, phone, pickupTime,
+                    status: 'รอชำระมัดจำ',
+                    createdAt: Date.now()
+                };
+                orders.push(order);
+                await storageSet('kickoff-orders', orders);
+
+                cart = [];
+                updateCartUI();
+                closeModal('cart-modal');
+                backToCart();
+                event.target.reset();
+                showQrPaymentModal(order);
+                showToast('จองสำเร็จ! กรุณาชำระเงินตาม QR Code', 'success');
+            } catch (err) {
+                console.error('Checkout error:', err);
+                showCheckoutError('เกิดข้อผิดพลาดในการบันทึกการจอง กรุณาลองใหม่อีกครั้ง');
+            } finally {
+                isSubmittingOrder = false;
+                if (btn) { btn.disabled = false; btn.innerText = 'ยืนยันการสั่งจอง'; }
+            }
+        }
+
+        // ================= QR CODE PAYMENT =================
+        function showQrPaymentModal(order) {
+            document.getElementById('qr-order-id').innerText = order.id;
+            document.getElementById('qr-order-amount').innerText = `฿${order.payAmount.toLocaleString()}`;
+            document.getElementById('qr-order-time').innerText = order.pickupTime ? new Date(order.pickupTime).toLocaleString('th-TH') : '-';
+
+            const box = document.getElementById('qr-code-box');
+            box.innerHTML = '';
+            const qrPayload = `KICKOFF-STORE|ORDER:${order.id}|AMOUNT:${order.payAmount}|NAME:${order.name}`;
+            if (window.QRCode) {
+                new QRCode(box, { text: qrPayload, width: 160, height: 160, colorDark: "#000000", colorLight: "#ffffff" });
+            } else {
+                box.innerHTML = `<div class="w-40 h-40 flex items-center justify-center text-4xl bg-gray-100 rounded-xl">📱</div>`;
+            }
+            document.getElementById('qr-payment-modal').classList.remove('hidden');
+        }
+        function closeQrModalAndReset() {
+            closeModal('qr-payment-modal');
+            showPage('profile-page');
+        }
+
+        // ================= PRODUCT RENDERING =================
+        function createProductCard(product) {
+            return `
+                <div class="bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between group">
+                    <div class="relative overflow-hidden cursor-pointer bg-gray-50 flex items-center justify-center p-2" onclick="openProductDetailModal(${product.id})">
+                        <img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=NO_IMAGE_SVG" class="w-full h-44 object-contain group-hover:scale-105 transition duration-300">
+                        <span class="absolute top-2 left-2 bg-black text-amber-400 text-[10px] font-extrabold px-2 py-0.5 rounded uppercase">${product.tag}</span>
+                        ${product.colors && product.colors.length > 0 ? `<span class="absolute top-2 right-2 bg-white/90 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🎨 ${product.colors.length} สี</span>` : ''}
+                    </div>
+                    <div class="p-4 flex-grow flex flex-col justify-between space-y-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${product.brand}</span>
+                            <h3 onclick="openProductDetailModal(${product.id})" class="text-sm font-bold text-slate-800 line-clamp-2 hover:text-amber-600 cursor-pointer transition">${product.name}</h3>
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t">
+                            <span class="text-base font-black text-slate-900">฿${product.price.toLocaleString()}</span>
+                            <button onclick="openProductDetailModal(${product.id})" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-xl transition font-bold text-xs shadow-sm">
+                                + เพิ่ม
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderShopProducts() {
+            const container = document.getElementById('shop-product-list');
+            const countLabel = document.getElementById('product-count-label');
+            if (!container) return;
+
+            // แบรนด์ที่มีสินค้าน้อย ถูกรวมไว้ใต้ตัวเลือก "อื่นๆ" ในดรอปดาวน์ (การ์ดสินค้ายังแสดงชื่อแบรนด์จริงตามเดิม)
+            const MINOR_BRANDS = ['Pan', 'Under Armour', 'Joma', 'Kelme'];
+            const filtered = products.filter(p => {
+                const matchCategory = currentFilterCategory === 'all' || p.category === currentFilterCategory;
+                let matchBrand;
+                if (currentFilterBrand === 'all') matchBrand = true;
+                else if (currentFilterBrand === 'อื่นๆ') matchBrand = p.brand === 'อื่นๆ' || MINOR_BRANDS.includes(p.brand);
+                else matchBrand = p.brand.toLowerCase().includes(currentFilterBrand.toLowerCase());
+                const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    p.desc.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchCategory && matchBrand && matchSearch;
+            });
+
+            if (countLabel) {
+                countLabel.innerText = `พบสินค้าทั้งหมด ${filtered.length} รายการ`;
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 font-bold">ไม่พบสินค้าที่ตรงกับการค้นหา</div>`;
+            } else {
+                container.innerHTML = filtered.map(p => createProductCard(p)).join('');
+            }
+        }
+    </script>
+</body>
+</html>
